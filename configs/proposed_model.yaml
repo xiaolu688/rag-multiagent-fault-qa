@@ -18,6 +18,8 @@ retrieval:
                                # design component and is not queried at eval time
   top_k: 5
   fusion: 0.5                  # BM25 weight, 1-fusion for the dense side
+  similarity_threshold: 0.7    # design value for the Chroma side; NOT applied at
+                               # eval time (oracle evidence is used instead)
 
 data:
   path: data/bigdata_error_cases_500_en.csv

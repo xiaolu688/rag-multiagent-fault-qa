@@ -201,7 +201,7 @@ def main():
     try:
         from scipy.stats import wilcoxon
         print("\nWilcoxon signed-rank on per-case word F1")
-        for a, b in (("bare", "baseline"), ("baseline", "pipeline")):
+        for a, b in (("bare", "baseline"), ("baseline", "pipeline"), ("bare", "pipeline")):
             if a in per_case and b in per_case:
                 stat, p = wilcoxon(per_case[a]["f1"], per_case[b]["f1"])
                 print(f"  {a:>8} -> {b:<8} p={p:.3g}")

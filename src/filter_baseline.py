@@ -28,7 +28,6 @@ DS = "data/bigdata_error_cases_500_en.csv"
 RES = "results/"
 
 VER = re.compile(r"\b\d+\.\d+(?:\.\d+){0,2}\b")
-REFUSE = re.compile(r"NOT COVERED BY KNOWLEDGE BASE|not covered by knowledge|no version|no documented version|none\b", re.I)
 
 
 def versions(s):

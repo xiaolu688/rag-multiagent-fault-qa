@@ -1,7 +1,6 @@
 # AI Use Disclosure
 
-Course 5801 final project — "A RAG + Multi-Agent Question-Answering System for
-Big-Data Laboratory Troubleshooting". Author: Yajie Gao.
+Course 5801 final project — "Research on Big-data-Lab Troubleshooting Question-Answering System Based on RAG and Multi-Agent Collaboration". Author: Yajie Gao.
 
 ## 1. What the AI assistant did
 

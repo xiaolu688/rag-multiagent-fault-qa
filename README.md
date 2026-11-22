@@ -1,4 +1,6 @@
-# Verifying Version-Compatibility Claims: A RAG + Multi-Agent Question-Answering System for Big-Data Laboratory Troubleshooting
+# Research on Big-data-Lab Troubleshooting Question-Answering System Based on RAG and Multi-Agent Collaboration
+
+*Earlier working subtitle: "Verifying Version-Compatibility Claims" — retained for traceability; the canonical title is the one above.*
 
 Reproducibility package for the final paper *"基于 RAG 与多智能体协同的大数据实验室故障排查问答系统研究"*
 — English title: *Research on Big-data-Lab Troubleshooting Q-A System Based on RAG and
@@ -258,6 +260,7 @@ Significance (exact McNemar on hallucination, Wilcoxon signed-rank on per-case F
 |---|---|---|---|---|
 | bare → single RAG | 0.69 → 0.35 | b=37, c=3, p=1.9×10⁻⁸ | 0.1346 → 0.2629 | p=5.4×10⁻¹⁸ |
 | single RAG → full | 0.35 → 0.00 | b=35, c=0, p=5.8×10⁻¹¹ | 0.2629 → 0.2135 | p=6.6×10⁻⁶ |
+| bare → full | 0.69 → 0.00 | b=69, c=0, p=3.4×10⁻²¹ | 0.1346 → 0.2135 | p=1.5×10⁻⁹ |
 
 Other committed results: `results/version_filter_summary.json` (the deterministic filter is a version-level
 control only: version-level hallucination 0.00 and recall 14/15 vs 9/15, while component-version
@@ -298,7 +301,7 @@ column; `cost_usd` is 0 everywhere because platform credit covered the calls.
 ```bibtex
 @misc{gao2026ragtroubleshooting,
   author = {Gao, Yajie},
-  title  = {A RAG + Multi-Agent Question-Answering System for Big-Data Laboratory Troubleshooting},
+  title  = {Research on Big-data-Lab Troubleshooting Question-Answering System Based on RAG and Multi-Agent Collaboration},
   year   = {2026},
   note   = {Course 5801 final paper, Wenzhou-Kean University},
   url    = {https://github.com/xiaolu688/rag-multiagent-fault-qa}

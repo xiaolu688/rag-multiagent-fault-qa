@@ -19,7 +19,7 @@ import re
 import time
 
 MAX_CTX = 6000
-MODEL = os.getenv("LLM_MODEL", "gpt-3.5-turbo")
+MODEL = os.getenv("LLM_MODEL", "glm-5.3-flash")
 TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.1"))
 TOP_P = float(os.getenv("LLM_TOP_P", "0.8"))
 MAX_TOKENS = int(os.getenv("LLM_MAX_NEW_TOKENS", "3072"))
