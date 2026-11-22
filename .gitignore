@@ -1,0 +1,12 @@
+.env
+*.env
+__pycache__/
+*.py[cod]
+.venv/
+results/*_progress.jsonl
+results/*.log
+.DS_Store
+*.safetensors
+*.bin
+*.pt
+*.ckpt
