@@ -1,0 +1,373 @@
+﻿case_id,component,config,inject_type,injected_version,evidence_versions,pred,ms,propagated,corrected,escaped,versions_in_output
+9,hadoop,baseline,append,3.2,2.7,"[Root cause] Major.minor 52.0 means a class file was compiled with Java 8, but the JVM running it is older (e.g., Java 7), triggering UnsupportedClassVersionError.
+
+[Version check] Run `java -version` and `mvn -v` (or check JAVA_HOME). If it shows 1.7.x or lower, the JVM is too old for Java 8-compiled classes. Note Hadoop 3.x jars target Java 8.
+
+[Repair steps]
+1. Install JDK 8 and set JAVA_HOME to it; verify with `java -version` (should report 1.8.x).
+2. Re-run the job.
+3. Per the course deployment guide, the lab officially supports Hadoop 3.2 — switch to Hadoop 3.2 with JDK 8 to match the supported environment.",,1,0,0,1.7|1.8|3.2|52.0
+9,hadoop,full,append,3.2,2.7,"[Root cause]
+The launching JVM is older (e.g., Java 7), while the class was compiled for Java 8 (major.minor 52.0).
+
+[Version check]
+52.0↔Java 8; Java 7; Hadoop 2.x; Hadoop 3.x; Hadoop 3.2 — all evidence-supported.
+
+[Repair steps]
+1. Use lab-supported Hadoop 3.2 with Java 8.",,1,0,1,3.2|52.0
+16,hadoop,baseline,append,3.1,,"[Root cause] Port 9000 is the NameNode RPC address (fs.defaultFS in core-site.xml). ""Connection refused"" means the DataNode cannot reach the NameNode — typically because the NameNode process is not running, or the hostname/IP in core-site.xml is wrong (rarely, a firewall block).
+
+[Version check] Confirm Hadoop 3.1 is installed; it is the officially supported version in this lab.
+
+[Repair steps]
+1. On master, run `jps` to check if NameNode is up; if missing, inspect NameNode logs and start it with `hdfs namenode -format` (first time only) then `start-dfs.sh`.
+2. Verify fs.defaultFS in core-site.xml points to the correct master hostname/IP and port 9000.
+3. Ensure /etc/hosts and firewall rules allow port 9000, then restart the DataNode.",,1,0,0,3.1
+16,hadoop,full,append,3.1,,"[Root cause]
+NameNode RPC (fs.defaultFS, port 9000) unreachable: NameNode not running, wrong hostname/IP or port in core-site.xml, or firewall blocking.
+
+[Version check]
+- 3.x (port 8020) (evidence, no case id)
+- hadoop 3.1 (course deployment guide, no case id)
+
+[Repair steps]
+1. `jps | grep NameNode` — is NameNode up?
+2. Check `core-site.xml`: `fs.defaultFS` must use NameNode host, port 9000, correct resolvable hostname/IP.
+3. If down: `hdfs --daemon start namenode` (or `start-dfs.sh`).
+4. `sudo systemctl status firewalld`; open port 9000 or stop it.
+5. `telnet <NameNode-host> 9000`.",,1,0,1,3.1
+52,spark,baseline,tamper,3.5,3.0|3.1,"**[Root cause]** Since Spark 3.5, Hadoop-bundled Spark distributions deliberately stop propagating `yarn.application.classpath` and `mapreduce.application.classpath` to YARN-submitted applications, precisely to avoid transitive Guava/Jackson dependencies from the cluster clashing with Spark's bundled versions.
+
+**[Version check]** The change takes effect from Spark 3.5 (not 3.1 as stated); verify with `spark-submit --version`, and check container launch logs for the missing classpath variables.
+
+**[Repair steps]**
+1. Restore old behavior: set the parameter related to `spark.hadoop.hadoopConf.yarn.app.classpath`, e.g. `--conf spark.hadoop.yarn.application.classpath=""$HADOOP_CONF_DIR,...""` matching your cluster's configured classpath.
+2. Or keep the default and instead shade Guava/Jackson in your job jar, or use `spark.driver/executor.userClassPathFirst=true` so app jars take precedence.
+3. Relaunch and confirm no Guava/Jackson `NoSuchMethodError`.",,1,0,0,3.1|3.5
+52,spark,full,tamper,3.5,3.0|3.1,NOT COVERED BY KNOWLEDGE BASE,,0,1,0,
+56,spark,baseline,append,3.1,,"[Root cause] jackson-module-scala and jackson-databind versions are mismatched. The Scala module calls a JsonMappingException constructor that doesn't exist in your databind jar, causing NoSuchMethodError (wrapped/reported at JacksonModule.setupModule).
+
+[Version check] Spark 3.1 is the lab's supported version; it requires Jackson 2.10.x–2.12.x (e.g., databind 2.12.x with jackson-module-scala_2.12:2.12.x). Verify with `spark-submit --version` and inspect `jars/` in the Spark home for conflicting jackson jars.
+
+[Repair steps]
+1. Remove/downgrade the custom databind jar you added; keep the Spark-bundled versions.
+2. If a dependency pulls a newer databind, exclude it (Maven/`--packages` exclusions) or set `spark.driver/executor.userClassPathFirst=false`.
+3. Re-run `spark-submit`; confirm no duplicate jackson jars on the classpath.",,1,0,0,2.10|2.12|3.1
+56,spark,full,append,3.1,,"[Root cause]
+jackson-module-scala and jackson-databind are version-mismatched: after databind was downgraded/upgraded, the constructor signature invoked inside JacksonModule.setupModule no longer exists, so NoSuchMethodError is thrown.
+
+[Version check]
+spark 3.1 (course deployment guide)
+
+[Repair steps]
+1. Restore jackson-databind to the version strictly matched with the deployed jackson-module-scala.
+2. Verify the laboratory's supported distribution: `spark-submit --version` must show spark 3.1.
+3. If not, redeploy spark 3.1 per the course deployment guide.
+4. Re-run: `spark-submit <your-job.jar>`; the setupModule error should disappear.",,1,0,0,3.1
+97,spark,baseline,append,3.2,,"**[Root cause]**
+PySpark enforces minimum versions for packages used by pandas UDFs. If pyarrow is missing or below the Spark-version-specific threshold (e.g., 2.0.0+ for Spark 3.2, 15.0.0+ for newer Spark), it raises UNSUPPORTED_PACKAGE_VERSION or ""package x must be installed"".
+
+**[Version check]**
+Confirm your Spark version (`spark.version`) — this lab's officially supported version is 3.2 (pyarrow ≥ 2.0.0). Then check the installed package in the same Python environment PySpark uses:
+`pip show pyarrow` or `python -c ""import pyarrow; print(pyarrow.__version__)""`.
+
+**[Repair steps]**
+1. Activate the same Python environment/venv used to launch PySpark.
+2. Upgrade: `pip install -U ""pyarrow>=2.0.0""` (use the threshold matching your Spark version).
+3. If missing, install other required packages similarly (e.g., pandas).
+4. Restart the PySpark session/driver and rerun the UDF.",,1,0,0,15.0.0|2.0.0|3.2
+97,spark,full,append,3.2,,"[Root cause] PySpark raises UNSUPPORTED_PACKAGE_VERSION when pyarrow is below the Spark-specific minimum; the installed pyarrow version is UNVERIFIED.
+[Version check] pyarrow 2.0.0+; pyarrow 15.0.0+ (thresholds differ across Spark versions); spark 3.2 (course deployment guide). Exact pyarrow requirement for spark 3.2: UNVERIFIED.
+[Repair steps]
+1. `spark-submit --version` (expect 3.2).
+2. `pip show pyarrow`.
+3. `pip install --upgrade ""pyarrow>=15.0.0""` (covers both documented thresholds).
+4. Restart `pyspark`.",,1,0,1,15.0.0|2.0.0|3.2
+115,hive,baseline,append,2.3.0,,"[Root cause]
+Guava dependency conflict: Hive's bundled guava-25.1-jre.jar coexists with other Guava versions (Linkis/Hadoop/Spark); class-loading order makes UnmodifiableIterator missing or signatures mismatched.
+
+[Version check]
+Confirm installed Hive is 2.3.0, the officially supported version in this lab (`hive --version`); note each component's guava-*.jar version.
+
+[Repair steps]
+1. Locate all guava-*.jar under $HIVE_HOME/lib, Hadoop share, and the Linkis Hive engine directory.
+2. Remove/rename Hive's guava-25.1-jre.jar and keep one unified version (prefer the higher one, e.g., Hadoop's guava).
+3. Copy the unified jar into $HIVE_HOME/lib and the engine classpath.
+4. Restart the Hive engine and re-run the failing query to verify.",,1,0,0,2.3.0|25.1
+115,hive,full,append,2.3.0,,"[Root cause]
+Hive's bundled guava-25.1-jre.jar conflicts with other Guava versions in the runtime (Linkis/Hadoop/Spark); class-loading order leaves UnmodifiableIterator missing or signatures mismatched.
+
+[Version check]
+- guava 25.1-jre (retrieved evidence)
+- Hive 2.3.0 (course deployment guide)
+
+[Repair steps]
+1. Confirm Hive is 2.3.0 (supported version).",,1,0,0,2.3.0|25.1
+129,hive,baseline,append,2.3,,"[Root cause] The upgrade changed the hive-contrib jar's version/path. On HDInsight 3.6, MultiDelimitSerDe lives in hive-contrib-1.2.1000.2.6.5.3033-1.jar; after migrating to 4.0 that reference is invalid, so the SerDe class cannot be found.
+
+[Version check] Verify the lab environment uses Hive 2.3, the officially supported version per the course deployment guide. Confirm the actual hive-contrib jar name/version on the 4.0 cluster and that no tables reference the old 3.6 jar path.
+
+[Repair steps]
+1. Locate the new hive-contrib jar on the 4.0 cluster.
+2. Update table DDL: ROW FORMAT SERDE pointing to the correct jar/class (or register the jar via ADD JAR).
+3. Recreate/alter affected tables and rerun the failing query.",,1,0,0,1.2.1|2.3|3.6|4.0
+129,hive,full,append,2.3,,"[Root cause] As drafted (all claims supported).
+[Version check] HDInsight 3.6; HDInsight 4.0; hive-contrib-1.2.1000.2.6.5.3033-1.jar (3.6 only); hive 2.3 — all supported; no 4.0 jar version documented, none added.
+[Repair steps]
+1. `hive --version` (expect 2.3).
+2. Locate the 4.0 jar containing MultiDelimitSerDe (jar name UNVERIFIED); confirm the found jar contains the class.
+3. `add jar <path>;`
+4. `ALTER TABLE <table> SET SERDE 'org.apache.hadoop.hive.contrib.serde2.MultiDelimitSerDe';`",,1,0,0,1.2.1|2.3|3.6|4.0
+151,hbase,baseline,tamper,1.2,2.5|2.5.11,"[Root cause] `NoSuchMethodError` at RegionServer startup is a Hadoop/HBase version mismatch: HBase's compiled code calls Hadoop APIs that don't exist (or have different signatures) in the loaded Hadoop jar. The trigger here is Hadoop 3.1.0, which the official compatibility matrix marks incompatible and the Hadoop PMC itself flags as unstable.
+
+[Version check] Run `hbase version` and `hadoop version`. The matrix lists supported Hadoop as 2.10.2+, 3.2.3+, 3.3.2–3.3.4, 3.3.5+, 3.4.0+; 3.1.0/3.1.1+ and 3.2.0–3.2.2 are incompatible.
+
+[Repair steps] (1) Stop the cluster. (2) Upgrade Hadoop to ≥3.2.3 (preferably 3.3.5+). (3) Remove stale `hadoop-*` jars from HBase's lib/classpath. (4) Restart and confirm the versions match.",,0,0,0,2.10.2|3.1.0|3.1.1|3.2.0|3.2.2|3.2.3|3.3.2|3.3.4|3.3.5|3.4.0
+151,hbase,full,tamper,1.2,2.5|2.5.11,NOT COVERED BY KNOWLEDGE BASE,,0,1,0,
+160,hbase,baseline,tamper,1.2,1.0|2.0,"[Root cause] HFile format changed non-backward-compatibly in HBase 2.0 (HBASE-16189/HBASE-18945). Files written by 2.0 cannot be opened by HBase 1.2 — this is expected, not corruption.
+
+[Version check] Confirm writer version = 2.0.x, reader version = 1.2.x. If your cluster originated from 0.98, note cross-major upgrades must go 0.98 → 1.2 → 2.x (no skipping).
+
+[Repair steps]
+1. Do not attempt to patch 1.2 to read the file.
+2. Upgrade the reading side to HBase 2.x (following the 1.2 intermediate step if coming from 0.98).
+3. Alternatively, access the data from a 2.0+ cluster and export via ExportSnapshot/HBase copy, then bulkload into the target cluster.
+4. Verify with an HFile scan on the 2.x reader.",,1,0,0,0.98|1.2|2.0
+160,hbase,full,tamper,1.2,1.0|2.0,"[Root cause]
+HBase 1.2 cannot open HBase 2.0 HFiles; the HFile format changed non-backward-compatibly in 2.0 (HBASE-16189/HBASE-18945).
+
+[Version check]
+Evidence references HBase 2.0, 1.2, 0.98, and 2.x; 0.98→2.x upgrades must go through 1.2 first.
+
+[Repair steps]
+1. Do not retry on 1.2; an HBase 2.0 HFile cannot be opened with HBase 1.2.
+2. Upgrade without skipping versions: 0.98 → 1.2 → 2.x. Moving 2.0 HFiles back to 1.2 is unsupported.",,1,0,1,0.98|1.2|2.0
+161,hbase,baseline,append,1.0,,"[Root cause] HBase upgrades cannot skip a major version; a jump must cross only one major boundary at a time (e.g., 0.98→1.2→2.x).
+
+[Version check] 1.4→2.5 is a single major-version step (1.x→2.x), so it does not violate the no-skip rule and is permissible in principle. Note, however, the laboratory's officially supported version is hbase 1.0, so 1.4 is already off the sanctioned baseline.
+
+[Repair steps]
+1. Confirm current version and run a full backup/snapshot.
+2. If starting from 1.0, upgrade 1.0→1.4 (or 1.2) first, then 1.4→2.5.
+3. Follow the official 1.x→2.x upgrade chapter (e.g., clean shutdown, hbase upgrade command), then verify cluster health.",,1,0,0,0.98|1.0|1.2|1.4|2.5
+161,hbase,full,append,1.0,,"[Root cause] The official Upgrading chapter forbids skipping a major version (0.98→2.x requires 1.2 between). Your source→target pair is UNVERIFIED against evidence.
+
+[Version check] 0.98, 1.2, 2.x (Upgrading chapter) -> SUPPORTED; 1.0 (deployment guide) -> SUPPORTED; question's source/target versions -> UNVERIFIED.
+
+[Repair steps]
+1. Verify your exact pair against the Upgrading chapter; only 0.98→1.2→2.x is evidence-backed; other paths UNVERIFIED.
+2. The deployment guide supports only hbase 1.0; any other release is outside the supported lab version.",,1,0,0,0.98|1.0|1.2
+164,hbase,baseline,tamper,2.2,2.5|2.5.0|2.6,"[Root cause]
+Hadoop 3.4.0 introduced internal API/dependency changes. HBase is compiled and validated against specific Hadoop releases; 2.5.0–2.5.10 and 2.6.0–2.6.1 predate those changes, so those pairings are simply untested — not proven broken, but unsupported.
+
+[Version check]
+Run `hbase version` and `hadoop version`. Approved pairs: Hadoop 3.4.0+ only with HBase ≥2.5.11 (2.5 line) or HBase ≥2.6.2 (2.6 line). Anything earlier on either side with Hadoop 3.4.x is off-matrix.
+
+[Repair steps]
+1. Upgrade HBase to 2.5.11+ (or 2.6.2+).
+2. Replace bundled Hadoop client jars with 3.4.x-matched ones.
+3. Restart HMaster/RegionServers.
+4. Smoke-test: create table, put/scan, verify no NoClassDefFound/NoSuchMethodError.",,0,1,0,2.5|2.5.0|2.5.10|2.5.11|2.6|2.6.0|2.6.1|2.6.2|3.4|3.4.0
+164,hbase,full,tamper,2.2,2.5|2.5.0|2.6,NOT COVERED BY KNOWLEDGE BASE,,0,1,0,
+261,hadoop,baseline,append,3.2,,"[Root cause] Hive bundles its own Hadoop client; after upgrading Hadoop 3.1→3.3, its RPC protocol version no longer matches the cluster, so HDFS access fails. Hive and Hadoop must be upgraded/matched together.
+
+[Version check] Run `hadoop version` on the cluster and check Hive's bundled jars: `ls $HIVE_HOME/lib | grep hadoop` (e.g., hadoop-client-3.1.x). Compare the RPC/client versions.
+
+[Repair steps]
+1. Downgrade the cluster to Hadoop 3.2 — the officially supported version in this lab — or obtain a Hive build compiled for Hadoop 3.3.
+2. Replace Hive's bundled Hadoop client jars in `$HIVE_HOME/lib` with the matching-version jars (hadoop-client, hadoop-common, hadoop-hdfs, etc.).
+3. Restart Hive services and rerun a test HDFS query.",,1,0,1,3.1|3.2|3.3
+261,hadoop,full,append,3.2,,NOT COVERED BY KNOWLEDGE BASE,,0,1,0,
+264,hadoop,baseline,append,3.1,,"[Root cause]
+The client's `fs.defaultFS`/nameservice URI differs from the server's, so HDFS path parsing fails. Cross-version clients must use the same nameservice as the server.
+
+[Version check]
+Run `hadoop version` on client and server. Cluster is 3.3; note the lab's officially supported version is Hadoop 3.1 — prefer a 3.1 client aligned to lab standards, but matching config works for 3.3.
+
+[Repair steps]
+1. On the client, open `core-site.xml`.
+2. Set `fs.defaultFS` (and any nameservice entries) to the cluster's exact URI, e.g. `hdfs://ns1:8020`.
+3. Or copy the server's `core-site.xml`/`hdfs-site.xml` to the client.
+4. Restart the client job and retry reading.",,1,0,0,3.1|3.3
+264,hadoop,full,append,3.1,,"[Root cause]
+The client's core-site nameservice/URI configuration differs from the server's, causing path-parsing errors.
+
+[Version check]
+- hadoop 3.1 (course deployment guide; officially supported version in this laboratory environment)
+
+[Repair steps]
+1. On the 3.1 client, edit the core-site configuration so its nameservice matches the server's nameservice.",,1,0,1,3.1
+270,hadoop,baseline,append,3.3,,"[Root cause] YARN creates a staging directory under the user's HDFS home (/user/xxx/.staging) at job submission. Missing directory or insufficient permissions cause java.io.FileNotFoundException during job initialization.
+
+[Version check] Your cluster runs Hadoop 3.1, but the lab guide officially supports Hadoop 3.3. Verify with `hadoop version`; consider upgrading if feasible, though the fix below works on 3.1.
+
+[Repair steps]
+1. Check HDFS home: `hdfs dfs -ls /user`
+2. Create it if missing: `hdfs dfs -mkdir -p /user/xxx`
+3. Set ownership: `hdfs dfs -chown -R xxx:xxx /user/xxx`
+4. Ensure permissions: `hdfs dfs -chmod 755 /user/xxx`
+5. Resubmit the job; YARN will auto-create .staging.",,1,0,0,3.1|3.3
+270,hadoop,full,append,3.3,,NOT COVERED BY KNOWLEDGE BASE,,0,1,0,
+272,hadoop,baseline,append,3.1,,"[Root cause] RPC/API mismatch: the 2.7 client jar calls a 3.x server API across major versions, causing UnsupportedOperationException/NoSuchMethod.
+
+[Version check] Run `hadoop version` on client and server; confirm major.minor match. The lab's supported version is 3.1 per the deployment guide—3.3 is not the official target.
+
+[Repair steps]
+1. Remove the old 2.7 client jar from your build/classpath.
+2. Switch dependencies to Hadoop 3.1 (lab standard): update pom.xml/`hadoop-client` to 3.1.x.
+3. If your server truly runs 3.3, either align the client to 3.3 or redeploy the cluster at 3.1.
+4. Rebuild the job jar, verify `hadoop version` on both ends matches, then resubmit.",,1,0,0,2.7|3.1|3.3
+272,hadoop,full,append,3.1,,NOT COVERED BY KNOWLEDGE BASE,,0,1,0,
+338,spark,baseline,append,3.5,,"[Root cause] Spark's `hive.metastore.warehouse.dir` differs from Hive's setting, or the warehouse directory was never created, so the table read fails.
+
+[Version check] Spark 2.4 is not the supported version; per the lab deployment guide, Spark 3.5 is the officially supported release in this environment. Verify with `spark-shell --version`.
+
+[Repair steps]
+1. Upgrade to Spark 3.5 per the course deployment guide.
+2. Check Hive's warehouse path: `hive.metastore.warehouse.dir` in `hive-site.xml`.
+3. Copy `hive-site.xml` into Spark's `conf/` directory so both use the same path.
+4. Create the directory if missing: `hdfs dfs -mkdir -p <warehouse-dir>` and `hdfs dfs -chmod 775 <warehouse-dir>`.
+5. Re-run the table query.",,1,0,0,2.4|3.5
+338,spark,full,append,3.5,,NOT COVERED BY KNOWLEDGE BASE,,0,1,0,
+342,spark,baseline,append,3.2,,"[Root cause] RegionTooBusyException means an HBase region is overloaded (hot-spot region) and rejects Spark read requests; balance and retry are needed on the HBase side.
+
+[Version check] Spark 3.3 is not officially supported in this lab; the deployment guide specifies Spark 3.2 as the supported version. Switch to Spark 3.2 before further troubleshooting.
+
+[Repair steps]
+1. Check region hotspotting in HBase UI; identify the overloaded region.
+2. Re-enable balancing: `balance_switch true`, then run `balancer` to redistribute hot regions.
+3. Pre-split tables for high-ingest keys to prevent future hotspots.
+4. Increase client retry settings (hbase.client.retries.number, rpc backoff) so Spark readers wait out busy regions.
+5. Rerun the Spark 3.2 job and confirm reads succeed.",,1,0,0,3.2|3.3
+342,spark,full,append,3.2,,NOT COVERED BY KNOWLEDGE BASE,,0,1,0,
+343,spark,baseline,tamper,4.0,3.0,"[Root cause]
+`spark.sql.adaptive.enabled` (AQE) exists only in Spark 4.0+. On older versions the parameter is unrecognized or ignored, producing the warning/error at job submission.
+
+[Version check]
+Run `spark-submit --version` or check `spark.version` in spark-shell. If the version is below 4.0, AQE is unsupported.
+
+[Repair steps]
+1. Preferred: upgrade the cluster/runtime to Spark 4.0+ to enable AQE.
+2. If upgrading isn't feasible, remove `spark.sql.adaptive.enabled` and all `spark.sql.adaptive.*` configs from spark-submit arguments, spark-defaults.conf, or SparkSession builder.
+3. Compensate with static tuning (e.g., set `spark.sql.shuffle.partitions` manually), since AQE-based automatic optimization won't apply.",,1,0,1,4.0
+343,spark,full,tamper,4.0,3.0,"[Root cause]
+spark.sql.adaptive.enabled is unrecognized or ignored because AQE (adaptive query execution) exists only in Spark 4.0+; older Spark versions treat the parameter as unrecognized or ignore it.
+
+[Version check]
+Spark 4.0+ (evidence, AQE clause)
+
+[Repair steps]
+1. Remove the parameter: rerun spark-submit without `--conf spark.sql.adaptive.enabled=...`.
+2. If AQE behavior is required, upgrade your Spark installation to Spark 4.0+.",,1,0,1,4.0
+345,spark,baseline,append,3.0,,"[Root cause]
+Spark 3.3 is not the officially supported version in this lab; the deployment guide supports Spark 3.0. Spark 3.3's metastore client expects a newer schema than your Hive metastore provides, triggering ""schema version too low.""
+
+[Version check]
+Run `spark-shell --version` — expect 3.0. Check metastore schema: `schematool -dbType derby -info` (use mysql/postgres as configured).
+
+[Repair steps]
+1. Preferred: reinstall Spark 3.0 per the course deployment guide, then reconnect.
+2. If you must keep Spark 3.3: back up the metastore DB, then run `schematool -upgradeSchema -dbType <db> -url <jdbc-url> -user <user> -pass <pass>`.
+3. Temporary workaround only: set `hive.metastore.schema.verification=false`; not recommended for graded labs.",,1,0,1,3.0|3.3
+345,spark,full,append,3.0,,NOT COVERED BY KNOWLEDGE BASE,,0,1,0,
+411,hive,baseline,append,2.3,,"[Root cause] Hive's MR engine requires the complete Hadoop mapreduce library on its classpath; a missing classpath entry or a Hive/Hadoop version mismatch prevents the org.apache.hadoop.mapreduce.Mapper class from being found.
+
+[Version check] Confirm you are running Hive 2.3, the officially supported version in this lab, against Hadoop 3.3 (`hive --version`, `hadoop version`); a mismatched Hive build is a common trigger.
+
+[Repair steps]
+1. Set `HADOOP_CLASSPATH` to include `$HADOOP_HOME/share/hadoop/mapreduce/*` (and common/lib jars).
+2. Check `hive-env.sh`/aux jar paths point to the correct Hadoop 3.3 libraries.
+3. If Hive is not 2.3, reinstall the matching supported build.
+4. Restart HiveServer2/Metastore and rerun the job.",,1,0,0,2.3|3.3
+411,hive,full,append,2.3,,NOT COVERED BY KNOWLEDGE BASE,,0,1,0,
+413,hive,baseline,append,3.1,,"**[Root cause]** The insert fails because HDFS cannot satisfy the replication factor — DataNodes are unavailable or too few live nodes for the configured replica count. Hive's write to HDFS aborts when replicas/cluster health is insufficient.
+
+**[Version check]** Confirm you are on Hive 3.1, the officially supported version in this lab environment (e.g., `hive --version`). Avoid mixing in unsupported Hive builds.
+
+**[Repair steps]**
+1. Run `hdfs dfsadmin -report` — verify all DataNodes are live.
+2. Restart dead DataNodes; check DataNode logs, disk space, and network.
+3. Compare `dfs.replication` with the actual node count; lower it if the cluster is small.
+4. Run `hdfs fsck /` to find under-replicated blocks and fix replication.
+5. Re-run the insert.",,1,0,0,3.1
+413,hive,full,append,3.1,,"[Root cause] Hive's insert fails because HDFS cannot place the required replica count, caused by unavailable DataNodes or insufficient replicas.
+[Version check] Hive 3.1 (course deployment guide); Hadoop version UNVERIFIED — not stated in evidence.
+[Repair steps] (none remain)",,1,0,1,3.1
+419,hive,baseline,append,3.1,,"[Root cause] The external table's schema (column order/count) doesn't match the underlying data file, so Hive reads columns positionally and misaligns them.
+
+[Version check] Confirm you're on the supported Hive 3.1 (run `hive --version`). Misalignment here isn't a version bug—3.1 is the lab's officially supported release.
+
+[Repair steps]
+1. Inspect the raw file (e.g., `hdfs dfs -cat` a few lines) to confirm actual column order, count, and delimiter.
+2. Drop the external table (`DROP TABLE ...`); this preserves the data files.
+3. Recreate it with columns matching the file exactly, e.g. `CREATE EXTERNAL TABLE t (...) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LOCATION '...'` (adjust delimiter/SerDe).
+4. If partitioned, run `MSCK REPAIR TABLE` or re-add partitions.
+5. Validate with `SELECT * FROM t LIMIT 10;`.",,1,0,0,3.1
+419,hive,full,append,3.1,,"[Root cause] External table's column definition (order/count) mismatches the underlying file; reads misalign or fail.
+[Version check] Hive 3.1 (course deployment guide).
+[Repair steps]
+(none supported by evidence)",,1,0,1,3.1
+422,hive,baseline,append,3.1,,"[Root cause] The metastore DB user lacks privileges on the PostgreSQL metadata database, or its sequences (e.g., SEQUENCE_TABLE, NOTIFICATION_SEQUENCE) are out of sync, blocking writes.
+
+[Version check] Confirm Hive 3.1 — the officially supported version in this lab: run `hive --version`.
+
+[Repair steps]
+1. As superuser: `sudo -u postgres psql`.
+2. Grant access: `GRANT ALL ON DATABASE metastore TO hive; GRANT ALL ON ALL TABLES IN SCHEMA public TO hive; GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO hive;`
+3. Fix desynced sequences: `SELECT setval('SEQUENCE_TABLE', (SELECT MAX(NEXT_ID) FROM SEQUENCE_TABLE));` (repeat for NOTIFICATION_SEQUENCE).
+4. Restart the metastore service and verify table creation succeeds.",,1,0,0,3.1
+422,hive,full,append,3.1,,"[Root cause] The Hive metastore's PostgreSQL user lacks privileges on the metadata database, or a metadata sequence is out of sync, so metastore writes fail.
+
+[Version check] Hive 3.1 (course deployment guide) -> SUPPORTED.
+
+[Repair steps] None — no repair commands are stated in the evidence.",,1,0,1,3.1
+425,hive,baseline,append,3.1,,"[Root cause] The Hive CLI/HiveServer2 session fails to initialize because the metastore or HiveServer2 service is unreachable (not started, wrong URI/port) or Hive–Hadoop jar versions mismatch.
+
+[Version check] Run `hive --version`; Hive 3.1 is the officially supported version here. Verify with Hadoop 3.3: replace Hive's `guava-*.jar` in `$HIVE_HOME/lib` with Hadoop 3.3's newer guava to avoid class conflicts.
+
+[Repair steps]
+1. Initialize schema: `schematool -dbType derby -initSchema` (first run only).
+2. Start services: `nohup hive --service metastore &` then `nohup hiveserver2 &`.
+3. Confirm ports 9083/10000 are listening (`netstat -tnlp`) and firewall allows them.
+4. Check `hive-site.xml` metastore URIs, then reconnect: `beeline -u jdbc:hive2://localhost:10000`.",,1,0,0,3.1|3.3
+425,hive,full,append,3.1,,NOT COVERED BY KNOWLEDGE BASE,,0,1,0,
+489,hbase,baseline,append,2.6,,"[Root cause] Replication stopped due to a replication peer misconfiguration or abnormal inter-cluster connection — the peer state is wrong, halting WAL shipping to the peer cluster.
+
+[Version check] HBase 2.4 is not the officially supported version in this laboratory environment. Per the course deployment guide, HBase 2.6 is the supported release — plan an upgrade.
+
+[Repair steps]
+1. Check peer state: `list_peers` / `get_peer_state` (shell) to identify the bad peer.
+2. Fix or remove/re-add the misconfigured peer: `remove_peer`, then `add_peer` with correct endpoint/config.
+3. Verify inter-cluster connectivity (ZK/quorum addresses, ports, firewall) between source and peer clusters.
+4. Re-enable replication and confirm queues recover; then upgrade to HBase 2.6.",,1,0,0,2.4|2.6
+489,hbase,full,append,2.6,,NOT COVERED BY KNOWLEDGE BASE,,0,1,0,
+495,hbase,baseline,append,2.5,,"[Root cause]
+Snapshot creation writes metadata to the HDFS root directory (`/hbase`). The user running HBase lacks write permission there, so the snapshot fails.
+
+[Version check]
+HBase 2.5 with Hadoop 3.3 is a supported combination in this lab; hbase 2.5 is the officially deployed version per the course guide. Confirm versions with `hbase version` and `hadoop version` before making changes.
+
+[Repair steps]
+1. Identify the HBase service user (e.g., `hbase`) via `ps -ef | grep hbase`.
+2. As HDFS superuser, grant access: `hdfs dfs -chown -R hbase /hbase` (or `hdfs dfs -chmod -R 775 /hbase`).
+3. If the wrong user launched HBase, restart services as the correct user.
+4. Retry the snapshot; verify with `list_snapshots`.",,1,0,0,2.5|3.3
+495,hbase,full,append,2.5,,NOT COVERED BY KNOWLEDGE BASE,,0,1,0,
+500,hbase,baseline,append,2.1,,"[Root cause] UnsupportedClassVersionError means the loaded class bytecode is newer than the regionserver's JVM can handle — the compiled HBase/Hadoop build doesn't match the running JVM, so classes fail to load.
+
+[Version check]
+1. `java -version` on the regionserver host; confirm the actual JVM in use via the regionserver log (`java.home`).
+2. `hbase version` — verify it is the officially supported hbase 2.1 from the course deployment guide.
+
+[Repair steps]
+1. Replace any non-standard HBase build with the supported hbase 2.1 distribution per the guide.
+2. Align the JVM: set `JAVA_HOME` (in `hbase-env.sh`) to a JDK compatible with the build, typically Java 8 for HBase 2.1.
+3. Restart the regionserver and confirm clean startup in logs.",,1,0,0,2.1
+500,hbase,full,append,2.1,,"[Root cause] The compiled version of HBase/Hadoop does not match the running JVM, and their bytecode version is too high to load.
+
+[Version check]
+- hbase 2.1 (course deployment guide)
+- hadoop (version unspecified) -> UNVERIFIED
+
+[Repair steps]
+None supported by the evidence.",,1,0,1,2.1

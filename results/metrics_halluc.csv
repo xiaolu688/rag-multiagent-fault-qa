@@ -1,0 +1,6 @@
+config,n,halluc_count,version_halluc_rate
+bare,100,69,0.6900
+rag,100,35,0.3500
+proposer,100,11,0.1100
+reviser,100,3,0.0300
+full,100,0,0.0000

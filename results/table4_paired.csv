@@ -1,0 +1,5 @@
+comparison,metric,test,n_discordant_b,n_discordant_c,statistic,p_value
+bare -> baseline,version_hallucination,McNemar exact binomial,37,3,,1.95e-08
+baseline -> pipeline,version_hallucination,McNemar exact binomial,35,0,,5.82e-11
+bare -> baseline,word_f1,Wilcoxon signed-rank,,,11.000,5.43e-18
+baseline -> pipeline,word_f1,Wilcoxon signed-rank,,,1214.000,6.56e-06

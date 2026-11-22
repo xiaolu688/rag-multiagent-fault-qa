@@ -1,0 +1,290 @@
+case_id,component,question,evidence_300,gold,baseline_pred,pipeline_pred,FS_baseline,FS_pipeline,ER_baseline,ER_pipeline,备注
+2,hadoop,"After start-dfs.sh, jps shows no DataNode, and the log says the datanode clusterID does not match the namenode clusterID. How do I fix this?","The HDFS NameNode and DataNode each record the clusterID in their own local storage directory's current/VERSION file; the two must match exactly, otherwise the DataNode exits at startup because of a clusterID mismatch. The location of this VERSION file differs across Hadoop versions, so look it up a","First use grep -r clusterID under the dfs data directories to locate the NameNode and DataNode VERSION files; change the clusterID in the NameNode VERSION to match the DataNode's (or vice versa, so both take the same value); after synchronizing the change, run stop-dfs.sh && start-dfs.sh on all nodes, then use jps to confirm the DataNode process exists.","[Root cause] The DataNode's local storage was initialized with a different clusterID than the NameNode (often from reformatting the NameNode). Mismatch makes the DataNode exit at startup, so jps shows no DataNode.
+
+[Version check] clusterID is stored in the current/VERSION file of each node's local dir; its path varies by Hadoop version, so check dfs.namenode.name.dir and dfs.datanode.data.dir in hdfs-site.xml to locate the VERSION files and compare clusterIDs.
+
+[Repair steps]
+1. Stop HDFS: stop-dfs.sh.
+2. Delete the DataNode data directory (current/) listed in dfs.datanode.data.dir. Warning: this erases DataNode-local data.
+3. Keep the NameNode dir untouched.
+4. Restart: start-dfs.sh; verify DataNode appears in jps and logs are clean.","[Root cause]
+The DataNode exits at startup because the clusterID in its local current/VERSION file doesn't exactly match the NameNode's.
+
+[Version check]
+None — no version",1,1,1,0,
+9,hadoop,Running a job on Hadoop 2.7 reports java.lang.UnsupportedClassVersionError: Unsupported major.minor version 52.0. What does this mean?,"major.minor 52.0 corresponds to a class file compiled for Java 8; this error means the class was compiled with a higher JDK version, but the JVM running it is older (e.g. Java 7). Hadoop 2.x officially requires Java 7/8, and all jars in Hadoop 3.x are compiled targeting Java 8, so starting with Java","Check the running JVM with java -version; upgrade the runtime JDK to match the compile version (Hadoop 2.7 recommends Java 7/8, Hadoop 3.x requires Java 8 or higher), export JAVA_HOME in hadoop-env.sh to point to the higher JDK, restart the cluster, then run the job again.","[Root cause] Major.minor 52.0 = class file compiled for Java 8. Your JVM is older (likely Java 7), so it can't load classes compiled with JDK 8. Hadoop 2.x requires Java 7/8; mixing versions triggers this error.
+
+[Version check] Run `java -version` (runtime) and `javac -version` (compiler). Check `echo $JAVA_HOME` and the JVM Hadoop actually uses (`hadoop version`). Confirm no custom jars were compiled with JDK 8 while nodes run Java 7.
+
+[Repair steps] 1) Install a consistent JDK 8 on all nodes. 2) Set `JAVA_HOME` in `hadoop-env.sh` to the JDK 8 path. 3) Verify with `java -version` (should show 1.8). 4) Restart Hadoop daemons and resubmit the job. If running custom code on Java 7, recompile with `-target 7` instead.","[Root cause] The JVM running Hadoop 2.x (e.g., Java 7) is older than the Java 8 (major.minor 52.0) class files, so starting with Java 7 inevitably raises the 52.0 error.
+
+[Version check] 52.0 = Java 8; Hadoop 2.x requires Java 7/8; Hadoop 3.x jars are compiled targeting Java 8 — all evidence-supported.
+
+[Repair steps] None supported by the evidence.",0,1,1,0,
+52,spark,"After Spark 3.1, yarn.application.classpath is no longer automatically injected into applications, causing Guava/Jackson conflicts. How do I handle this?","Since Spark 3.1, the Spark distributions that bundle Hadoop no longer propagate yarn.application.classpath and mapreduce.application.classpath to YARN-submitted applications by default, precisely to prevent failures caused by transitive dependencies pulled from the Hadoop cluster (such as Guava and ","Prefer keeping Spark's bundled dependency versions; do not manually put the cluster's guava/jackson jars on --jars. If you truly need to restore the pre-Spark 3.0 propagation behavior, set spark.hadoop.hadoopConf.yarn.application.classpath=<value> per the official migration guide, and repackage/shade your third-party dependencies.","[Root cause] Since Spark 3.1, Hadoop-bundled Spark distributions no longer propagate `yarn.application.classpath` and `mapreduce.application.classpath` to YARN-submitted apps by default—intentionally, to keep Hadoop's transitive dependencies (Guava, Jackson) from clashing with Spark's own versions.
+
+[Version check] Confirm your Spark version is ≥ 3.1 and inspect `spark-defaults.conf` for any `spark.hadoop.hadoopConf.yarn.app.classpath`-related settings.
+
+[Repair steps] Preferred: keep the isolation; fix conflicts by excluding or shading Guava/Jackson in your application. Alternatively, restore old behavior by setting the parameters related to `spark.hadoop.hadoopConf.yarn.app.classpath` so the YARN classpath is propagated again.","[Root cause]
+Since Spark 3.1, Hadoop-bundled Spark distributions stopped propagating yarn.application.classpath and mapreduce.application.classpath by default, preventing Guava/Jackson transitive-dependency conflicts with Spark's own versions.
+
+[Version check]
+Spark 3.1 (no case id in evidence)
+
+[Repair steps]
+1. Set the parameter(s) related to spark.hadoop.hadoopConf.yarn.app.classpath to restore classpath propagation (exact file/location UNVERIFIED).
+2. Caution: the default isolates Spark from cluster transitive dependencies; restoring it may reintroduce Guava/Jackson clashes.",1,1,0,1,
+56,spark,"spark-submit reports com.fasterxml.jackson.databind.JsonMappingException.<init>(Closeable,String)V at JacksonModule.setupModule. How do I handle this?","The Jackson Scala module (jackson-module-scala) and jackson-databind versions must be strictly matched. After the databind version is downgraded or upgraded, the constructor signature invoked inside JacksonModule.setupModule no longer exists, and NoSuchMethodError is thrown directly.","Downgrade jackson-databind to the version matching Spark's bundled one (for example, from 2.13.5 down to 2.12.x), or upgrade jackson-module-scala to the corresponding version; repackage the fat jar and use dependency:tree to confirm there is ultimately only one jackson-databind.","[Root cause] jackson-module-scala and jackson-databind versions are mismatched. Databind was upgraded/downgraded, so the JsonMappingException.<init>(Closeable,String) constructor no longer exists, and JacksonModule.setupModule throws NoSuchMethodError.
+
+[Version check] Run `spark-submit --version` and inspect the classpath: `mvn dependency:tree | grep jackson`. Confirm which databind version got pulled in versus the version your jackson-module-scala was compiled against.
+
+[Repair steps]
+1. Pin jackson-databind to the version matching your jackson-module-scala (e.g., Scala module 2.12.x ↔ databind 2.12.x).
+2. Exclude the transitive databind: add exclusions for jackson-databind/core/annotations in dependencies.
+3. Or force the correct version via `--jars` / spark.driver.userClassPathFirst=true.
+4. Re-run spark-submit to verify.","[Root cause] jackson-module-scala and jackson-databind versions are mismatched: after databind was downgraded or upgraded, the constructor signature invoked inside JacksonModule.setupModule no longer exists, so NoSuchMethodError is thrown.
+
+[Version check] Evidence states no version numbers or case ids.
+
+[Repair steps]
+1. Use a jackson-databind version strictly matching jackson-module-scala.",1,1,1,0,
+89,spark,The Hadoop-free Spark running on K8s/YARN keeps missing Hadoop classes. How should SPARK_DIST_CLASSPATH be configured?,"The Hadoop-free (user-provided Hadoop) distribution does not bundle a Hadoop client; the user must assemble the cluster Hadoop classpath into SPARK_DIST_CLASSPATH, otherwise all FileSystem/YARN-related classes are missing.","export SPARK_DIST_CLASSPATH=$($HADOOP_HOME/bin/hadoop classpath); in the K8s case, install the corresponding Hadoop in the executor image's Dockerfile and set the correct SPARK_DIST_CLASSPATH; also configure HADOOP_CONF_DIR correctly.","[Root cause] The Hadoop-free Spark build does not bundle Hadoop client jars; if `SPARK_DIST_CLASSPATH` is unset or incomplete, FileSystem/YARN classes cannot load.
+
+[Version check] Confirm Spark is the `hadoop-free`/`without-hadoop` build and that the classpath jars match the cluster Hadoop version.
+
+[Repair steps]  
+1. On a configured Hadoop client: `export SPARK_DIST_CLASSPATH=""$(hadoop classpath)""`.  
+2. Add the same export to `spark-env.sh` or the Spark/K8s launcher/container environment.  
+3. Ensure `HADOOP_CONF_DIR`/`YARN_CONF_DIR` and Hadoop jars/configs are present in driver/executor containers.  
+4. Restart Spark and verify YARN/FileSystem classes load from the classpath.","[Root cause]
+The Hadoop-free Spark distribution bundles no Hadoop client, so FileSystem/YARN classes are missing until the cluster's Hadoop classpath is assembled into SPARK_DIST_CLASSPATH.
+
+[Version check]
+No version numbers appear in the evidence; no component-version pairs to verify.
+
+[Repair steps]
+1. Assemble the cluster Hadoop classpath into SPARK_DIST_CLASSPATH (exact command UNVERIFIED).",1,1,1,0,
+127,hive,Hive reports SemanticException Unable to fetch table t. null — how to handle when the Metastore is Oracle.,"When the Metastore backend is Oracle and the CREATE TABLE statement uses column/storage option syntax not supported by Oracle, the Metastore fails to fetch the table metadata and reports ORA-00922: missing or invalid option, which surfaces at the upper layer as Unable to fetch table null.","1) Review the Metastore log to locate the underlying ORA-00922 error; 2) check whether the CREATE TABLE statement contains column definitions or storage clauses not supported by Oracle; 3) if necessary, manually fix the dirty data in the Oracle metastore tables, or recreate the table using supported syntax; 4) it is not recommended to directly hack the database; prefer recreating through Hive DDL.","[Root cause]
+The Metastore backend is Oracle; the CREATE TABLE statement contained column/storage options Oracle rejects, causing ORA-00922: missing or invalid option. The Metastore can't fetch metadata, surfacing as ""Unable to fetch table t. null"".
+
+[Version check]
+Confirm Hive/Metastore version vs. Oracle JDBC driver and schema compatibility; check metastore.log for ORA-00922 to confirm the failing DDL.
+
+[Repair steps]
+1. Locate the failing CREATE TABLE DDL in metastore logs.
+2. Remove unsupported column/storage options; use Oracle-compatible syntax (e.g., valid datatype/option keywords).
+3. Drop and recreate the affected table with corrected DDL.
+4. If schema mismatch, run schematool -upgradeSchema for your DB type.
+5. Validate with SHOW TABLES / DESCRIBE.","[Root cause] The Metastore's Oracle backend rejects the CREATE TABLE's unsupported column/storage option syntax (ORA-00922: missing or invalid option); metadata fetch fails and surfaces as Unable to fetch table null.
+
+[Version check] No version numbers appear in the retrieved evidence; none asserted.
+
+[Repair steps]
+None supported by the retrieved evidence.",1,1,1,0,
+151,hbase,Can HBase 2.5 run directly on Hadoop 3.1.0? What causes NoSuchMethodError when starting the RegionServer?,"According to the Apache HBase official basic-prerequisites compatibility matrix, the Hadoop versions officially supported by HBase 2.5.x are Hadoop 2.10.2+, Hadoop 3.2.3+, Hadoop 3.3.2~3.3.4, Hadoop 3.3.5+ and 3.4.0+; Hadoop 3.1.0, 3.1.1+, 3.2.0~3.2.2 and 3.3.0~3.3.1 are all marked as incompatible (","Do not run HBase 2.5 on Hadoop 3.1.x or 3.3.0/3.3.1. Upgrade Hadoop to 3.3.5+ (or 3.4.0+, which requires HBase 2.5.11+), and in distributed mode replace the hadoop jars bundled under the HBase lib directory (hbase.mapreduce, hadoop-common, hadoop-hdfs, etc.) with the jars matching the cluster's actual Hadoop; replace them consistently across the whole cluster and then restart.","[Root cause] No. HBase 2.5.x cannot run directly on Hadoop 3.1.0. The HBase official compatibility matrix marks Hadoop 3.1.0 as incompatible, and the Hadoop PMC itself declared 3.1.0 an unstable release. The NoSuchMethodError at RegionServer startup is caused by this version mismatch: HBase 2.5 is compiled against newer Hadoop APIs, so calls to methods missing in Hadoop 3.1.0 fail at runtime.
+
+[Version check] Verify with `hadoop version` and `hbase version`; confirm Hadoop 3.1.0 appears in the ""incompatible"" (✕) column of the HBase basic-prerequisites matrix.
+
+[Repair steps] 1) Upgrade Hadoop to a supported version: 2.10.2+, 3.2.3+, 3.3.2–3.3.4, 3.3.5+, or 3.4.0+. 2) Replace HBase's bundled Hadoop jars (`$HBASE_HOME/lib`) or set `HADOOP_HOME` correctly. 3) Run `hbase classpath` to confirm no stale 3.1.0 jars remain. 4) Restart RegionServer and confirm startup.","[Root cause]
+Hadoop 3.1.0 is marked incompatible with HBase 2.5.x and is an unstable release per the Hadoop PMC.
+
+[Version check]
+HBase 2.5.x; Hadoop 3.1.0 (incompatible); supported Hadoop: 2.10.2+, 3.2.3+, 3.3.2–3.3.4, 3.3.5+, 3.4.0+; also incompatible: 3.1.1+, 3.2.0–3.2.2, 3.3.0–3.3.1 (all per HBase prerequisites matrix). No case ids in evidence.
+
+[Repair steps]
+None supported by the evidence.",1,1,1,1,
+160,hbase,Reading an HFile written by HBase 2.0 directly with HBase 1.2 reports a version error. What should I do?,Official "Known Incompatibilities": HBASE-16189/HBASE-18945 state that an HBase 2.0 hfile cannot be opened with HBase 1.0; the HFile format had non-backward-compatible changes in 2.0. Cross-major-version upgrades cannot skip versions: 0.98→2.x must go through 1.2 first and then 2.x.,"Do not read across the downgrade. Upgrade path: first rolling-upgrade 1.x to the latest 1.x, then upgrade to 2.x; if rollback is needed, only roll back patch versions within the same minor release; major-version rollback requires backup and restore following the official rollback procedure.","[Root cause]
+HBase 2.0 introduced non-backward-compatible HFile format changes (HBASE-16189/HBASE-18945). Files written by 2.0 cannot be opened by older 1.x readers, so HBase 1.2 fails with a version error. This is by design, not corruption.
+
+[Version check]
+Confirm writer version = 2.0.x, reader version = 1.2.x. Any 1.x reading 2.0 HFiles will fail; no 1.x patch level fixes this.
+
+[Repair steps]
+1. Do not attempt to ""fix"" the HFile or downgrade the writer—downgrades are unsupported.
+2. Upgrade the reading cluster from 1.2 to 2.x (1.2→2.x is a valid upgrade path; only 0.98 must first pass through 1.2).
+3. After upgrading, read the HFile with the 2.x HFile tool (e.g., `hbase hfile -v -p -f <path>`).
+Alternatively, export the data from the 2.0 cluster and import into the 1.2 cluster.","[Root cause] Per HBASE-16189/18945, HBase 2.0 introduced non-backward-compatible HFile format changes; 2.0 HFiles cannot be opened by HBase 1.0 readers.
+
+[Version check] 2.0, 1.0 (HBASE-16189/18945); 0.98→1.2→2.x (upgrade rule).
+
+[Repair steps]
+1. Upgrade 1.2→2.x — final leg of the 0.98→1.2→2.x path; never skip major versions.",1,1,1,1,
+164,hbase,Why is there a version threshold when pairing HBase 2.5/2.6 with Hadoop 3.4.x?,"Official matrix: Hadoop 3.4.0+ is only supported by HBase 2.5 from 2.5.11+ onward, and by HBase 2.6 from 2.6.2+ onward; earlier HBase 2.5.0~2.5.10 with 3.4.x has not been tested.","When using Hadoop 3.4.x, upgrade HBase to 2.5.11+ or 2.6.2+; otherwise fall back to Hadoop 3.3.5.","[Root cause] Hadoop 3.4.0 introduced API/dependency changes that HBase only validated starting with specific releases. Per the official matrix, HBase 2.5.11+ and 2.6.2+ are the first builds tested against Hadoop 3.4.x; HBase 2.5.0–2.5.10 with Hadoop 3.4.x is untested, so compatibility is not guaranteed.
+
+[Version check] Verify installed versions: `hbase version` and `hadoop version`. Flag any pairing of HBase ≤2.5.10 with Hadoop 3.4.0+.
+
+[Repair steps] 1) Upgrade HBase to ≥2.5.11 (2.5 line) or ≥2.6.2 (2.6 line). 2) Alternatively, downgrade Hadoop to a version on the tested matrix. 3) Restart cluster and re-run smoke tests.","[Root cause] Per the official matrix, Hadoop 3.4.0+ is supported only by HBase 2.5 from 2.5.11+ onward and by HBase 2.6 from 2.6.2+ onward; HBase 2.5.0~2.5.10 with 3.4.x has not been tested, so the pairing is unsupported below those points.
+
+[Version check] Hadoop 3.4.0+; HBase 2.5; 2.5.11+; 2.6; 2.6.2+; 2.5.0~2.5.10; Hadoop 3.4.x — all per official matrix.
+
+[Repair steps]
+1. On HBase 2.5.0–2.5.10, upgrade to 2.5.11 or newer.
+2. On any HBase 2.6 release before 2.6.2, upgrade to 2.6.2 or newer.",1,1,1,1,
+200,hbase,"A node simultaneously runs leftover HMaster/HRegionServer processes from an uncleanly killed previous start, causing the new cluster to error out.","Official pre-startup checks: before starting a fresh deployment, you must ensure no leftover HMaster/HRegionServer/HQuorumPeer processes remain on all nodes; otherwise port/data-directory conflicts occur.","Use jps on each node to check for HMaster, HRegionServer, and HQuorumPeer; if any exist, kill them cleanly before running start-hbase.sh.","**[Root cause]** Leftover HMaster/HRegionServer/HQuorumPeer processes from an uncleanly killed previous start still occupy ports and lock data directories, so the new cluster conflicts and errors out on startup.
+
+**[Version check]** Verify Hadoop/HBase binary versions match on all nodes: run `hbase version` and `hadoop version` on each node and confirm identical releases and JAVA_HOME configuration before proceeding.
+
+**[Repair steps]**
+1. On every node, run `jps` to identify lingering HMaster, HRegionServer, and HQuorumPeer PIDs.
+2. Kill them: `kill -9 <pid>` (kill remaining zookeeper/hbase daemons too).
+3. Confirm none remain: `ps -ef | grep -E ""HMaster|HRegionServer|HQuorumPeer""` returns nothing.
+4. Optionally clear ZooKeeper/HBase tmp data if directory locks persist.
+5. Restart the cluster cleanly with `start-hbase.sh`.","[Root cause] Leftover HMaster/HRegionServer/HQuorumPeer processes cause port/data-directory conflicts on a fresh deployment (origin of the leftovers: UNVERIFIED).
+
+[Version check] None mentioned in the evidence; no versions claimed.
+
+[Repair steps]
+1. Before starting, ensure no leftover HMaster/HRegionServer/HQuorumPeer processes remain on all nodes.",1,1,1,0,
+265,hadoop,"DataNode logs repeatedly show Slow block receiver, and write performance drops. How do I locate it?","Slow block reception is usually caused by disk IO bottlenecks, network bandwidth, or a full disk; the DataNode's slow receiver indicates a slow write pipeline.","Check disk space and IO (iostat) and NIC bandwidth, clean slow disks or replace disk slots, and lower write concurrency if needed.","[Root cause] ""Slow block receiver"" means the DataNode write pipeline is slow — typically disk IO bottleneck, insufficient network bandwidth, or a nearly full disk.
+
+[Version check] Run `hdfs version`; ensure all DataNodes run the same Hadoop release and review release notes/Jira for slow-receiver fixes in newer 2.x/3.x versions.
+
+[Repair steps]
+1. `df -h`: free space on disks >85% full.
+2. `iostat -x 1`: find disks with high %util/await; replace failing disks or redistribute `dfs.datanode.data.dir` mounts.
+3. `iperf` between DataNodes; fix NIC, bonding, or bandwidth limits.
+4. Increase `dfs.datanode.max.transfer.threads` (4096) and `io.file.buffer.size`.
+5. Pause balancer/heavy jobs competing for IO, then re-check logs.","[Root cause] The DataNode's slow receiver indicates a slow write pipeline, typically caused by disk IO bottlenecks, limited network bandwidth, or a full disk.
+
+[Version check] None — the knowledge base contains no version numbers or case ids.
+
+[Repair steps] None — no repair steps are supported by the evidence.",1,1,1,0,
+266,hadoop,The data directory dfs.datanode.data.dir is configured with multiple disks. What happens when one disk is bad?,DataNode tolerates multi-disk failures: a bad disk is marked as a failed volume and its replicas are re-copied by the NameNode to other disks; the DataNode does not exit entirely.,Replace the bad disk and clear the failed-volume state; the NameNode automatically replenishes replicas without restarting the whole cluster.,"[Root cause] A single bad disk is treated as a failed volume, not a DataNode failure. The DataNode excludes that volume from serving/writing blocks and continues running on the remaining disks; NameNode re-replicates the lost replicas elsewhere.
+
+[Version check] Multi-disk failure tolerance (volume failure handling) exists in Hadoop 2.x+ (HDFS-392). In Hadoop 1.x the DataNode exited when any data dir failed. Confirm via `hadoop version` and DataNode logs showing ""vol failure"" events.
+
+[Repair steps]
+1. Check DataNode logs (`hdfs.log`) for failed volume messages.
+2. Fix or replace the faulty disk; recreate the mount point directory with correct permissions.
+3. Restart the DataNode so it re-registers the recovered volume.
+4. Verify replication status: `hdfs dfsadmin -report` and NameNode UI (under-replicated blocks).","[Removed]
+- Repair step 1: ""Confirm failed-volume state and Data",1,1,1,0,
+274,hadoop,"YARN NodeManager logs report Container is running beyond virtual memory limits, and jobs repeatedly fail. How do I adjust?",The container's actual virtual memory exceeds the yarn.nodemanager.vmem-pmem-ratio limit and is killed as over-limit; this is common when JVM virtual memory accounting is large.,"Appropriately raise yarn.nodemanager.vmem-pmem-ratio, or increase the container physical memory (memory.mb) and the corresponding Xmx so physical memory matches the limit.","[Root cause] The container's virtual memory exceeded yarn.nodemanager.vmem-pmem-ratio × allocated memory; the NodeManager killed it. JVM processes (e.g., Spark/MapReduce) reserve large virtual address space, triggering this even when physical usage is low.
+
+[Version check] Run `hadoop version`. In Hadoop 2.x, `yarn.nodemanager.vmem-check-enabled` defaults to true with ratio 2.1; in 3.x the check defaults to false. Verify current values in yarn-site.xml or the ResourceManager web UI.
+
+[Repair steps]
+1. In yarn-site.xml on all NodeManagers, raise `yarn.nodemanager.vmem-pmem-ratio` (e.g., 2.1 → 4).
+2. Alternatively set `yarn.nodemanager.vmem-check-enabled=false`.
+3. Optionally increase container memory (e.g., mapreduce.map.memory.mb).
+4. Restart NodeManagers, then resubmit the job.","[Root cause]
+The container's virtual memory exceeds the yarn.nodemanager.vmem-pmem-ratio limit and is killed as over-limit; common when JVM virtual-memory accounting is large.
+
+[Version check]
+None mentioned in the retrieved evidence.
+
+[Repair steps]
+None supported by the retrieved evidence.",0,1,1,0,
+411,hive,A Hive job on Hadoop 3.3 reports ClassNotFound org.apache.hadoop.mapreduce.Mapper with the MR engine. How do I handle it?,Hive running MR depends on the complete Hadoop mapreduce library; a missing classpath or version mismatch prevents finding the class.,"Confirm HADOOP_CLASSPATH is correct and Hive's hadoop dependency matches the cluster; add the mapreduce dependency, then rerun.","[Root cause]
+Hive's MR engine requires the full Hadoop mapreduce library; a missing Hadoop classpath entry or a Hive/Hadoop version mismatch prevents Mapper from loading.
+
+[Version check]
+Confirm Hive's compiled Hadoop version matches 3.3: run `hive --version` and check `$HIVE_HOME/lib` for hadoop-mapreduce-client-core*.jar; verify it matches your Hadoop 3.3 release, not an older 2.x jar.
+
+[Repair steps]
+1. Ensure HADOOP_HOME and HADOOP_CLASSPATH are exported before starting Hive.
+2. Remove stale/mismatched hadoop-mapreduce-client*.jar from Hive lib.
+3. Copy matching 3.3 jars: `hadoop classpath --glob` output added via hive-env.sh (HADOOP_CLASSPATH) or symlink Hadoop's client jars into $HIVE_HOME/lib.
+4. Restart hiveserver2/metastore, then rerun the job.","[Root cause]
+Hive's MR engine cannot find the Hadoop mapreduce library class because the classpath lacks the complete mapreduce library or versions mismatch.
+
+[Version check]
+No version numbers appear in the evidence; none asserted.
+
+[Repair steps]
+(None supported by evidence.)",0,1,1,1,
+414,hive,HiveServer2 reports Unable to open session under high concurrency; connections or session resources are exhausted. How do I handle it?,"The HiveServer2 concurrent-session count exceeds the limit or resources are exhausted, so new sessions cannot open.","Increase hive.server2.maximum.number.of.concurrent.sessions and the thread pool, add resources, and stagger connections.","[Root cause] HiveServer2's concurrent-session/thread pool and async execution resources are exhausted (session limit reached or host memory/CPU insufficient), so new sessions cannot open.
+
+[Version check] Run `hive --version`. Defaults differ by version: Hive 2.x sets `hive.server2.thrift.worker.threads=450`; older versions default lower. Verify live values with `SET hive.server2.thrift.worker.threads;` in beeline.
+
+[Repair steps]
+1. In hive-site.xml raise `hive.server2.thrift.worker.threads` (e.g., 500–1000), `hive.server2.async.exec.threads`, and `hive.server2.async.exec.wait.queue.size`.
+2. Enable aggressive cleanup: shorten `hive.server2.session.check.interval` and idle session timeouts.
+3. Confirm YARN queue capacity isn't exhausted; kill hung jobs.
+4. Restart HiveServer2.
+5. For sustained load, add HS2 instances behind ZooKeeper service discovery.","[Root cause] HiveServer2 cannot open new sessions because the concurrent-session count exceeds its limit or session resources are exhausted.
+
+[Version check] None — the evidence mentions no version numbers.
+
+[Repair steps] None.",1,1,1,0,
+417,hive,"A Hive job has poor data locality at the map side and shuffles a lot to remote nodes, hurting performance. How do I optimize?","Poor data locality makes maps read cross-node, increasing network overhead; affected by replica distribution and scheduling.","Check data replica distribution and scheduling-locality settings (mapred.task.cache.levels), and raise replicas or locality scheduling.","[Root cause] Map tasks run on nodes lacking block replicas, forcing cross-node reads and network-heavy shuffles—caused by uneven replica distribution and scheduler locality decisions.
+
+[Version check] Confirm Hadoop ≥2.x and Hive version via `hive --version`; ensure HDFS short-circuit reads are supported (`dfs.client.read.shortcircuit=true`).
+
+[Repair steps]
+1. Run `hdfs fsck /warehouse/path -blocks -locations` to inspect replica placement.
+2. Run HDFS `balancer` to redistribute blocks evenly across nodes.
+3. Set replication factor ≥3 so every rack has a local copy.
+4. Increase locality wait: `mapreduce.job.locality.delay=10000` (ms) in YARN/CapacityScheduler.
+5. Enable `dfs.client.read.shortcircuit` and datanode-local container requests.
+6. Re-run job; verify locality via counters (""LOCAL vs REMOTE"" map reads).","[Root cause] Poor data locality causes maps to read cross-node, increasing network overhead; affected by replica distribution and scheduling.
+
+[Version check] No version numbers appear in the evidence or the question.
+
+[Repair steps] None supported by evidence.",1,1,1,0,
+418,hive,"A Hive query reports Column not found, but the column exists; a case or alias issue. How do I handle it?","Hive column names are case-sensitive, or the query references a wrong alias, so the column cannot be found.","Check the column-name case and alias, use fully-qualified column names, avoid alias shadowing, then re-query.","[Root cause]
+Hive column names are case-sensitive, or the query references a wrong/undefined alias, so the column cannot be resolved.
+
+[Version check]
+Run `hive --version`. Older Hive releases (pre-1.x) handle case and alias resolution more strictly; confirm behavior matches your version's documentation.
+
+[Repair steps]
+1. Run `DESCRIBE table_name;` and copy the exact column spelling.
+2. Match case exactly — prefer lowercase as stored in the metastore.
+3. In joins, qualify every column (`t1.col`) and verify aliases defined in FROM/JOIN clauses.
+4. Check views/CTEs: ensure the column is exposed in their SELECT projection.
+5. Re-run the corrected query.","[Root cause]
+Hive column names are case-sensitive, or the query references a wrong alias, so Hive cannot resolve the column.
+
+[Version check]
+No version numbers appear in the evidence; no compatibility claims are made.
+
+[Repair steps]
+(none — no repair steps are stated in the evidence)",1,1,1,1,
+421,hive,A Hive query reports File already exists in the output directory; the insert-overwrite fails. How do I handle it?,"A file with the same name already exists in the output directory, and Hive does not overwrite it by default, causing failure.","Use INSERT OVERWRITE to overwrite, or clean the target directory first, confirm the output path is writable, then rewrite.","[Root cause] A file with the same name already exists in the output directory; Hive does not overwrite existing files by default, so the insert-overwrite fails.
+
+[Version check] Run `hive --version`; older releases (<1.0) handle overwrite of existing output files poorly. Confirm the overwrite behavior of `hive.insert.overwrite` and dynamic-partition settings in your version's documentation.
+
+[Repair steps]
+1. Remove the conflicting file: `hdfs dfs -rm /path/to/output/file` (or rename it).
+2. Clean the target directory/partition before rerunning.
+3. Re-execute `INSERT OVERWRITE TABLE ...`, ensuring the target path is correct and not duplicated.
+4. If using dynamic partitions, set `hive.exec.dynamic.partition=true` and `hive.exec.dynamic.partition.mode=nonstrict`, then retry the query.","[Root cause] Hive does not overwrite files by default, so a file with the same name already present in the output directory causes the insert to fail.
+
+[Version check] None mentioned in the evidence.
+
+[Repair steps] None supported by evidence.",0,1,1,1,
+424,hive,A Hive job reading an ORC table reports a schema mismatch; the column count differs. How do I handle it?,"The ORC file schema differs from the table definition (added/changed columns not synced), failing the read.","Rebuild the table to align the ORC schema, or upgrade the table schema to be compatible with old files; verify columns and types before reading.","[Root cause] The ORC files' embedded schema doesn't match the metastore table definition — columns were added/changed in the data but the table DDL wasn't synced, so the reader sees a column-count mismatch.
+
+[Version check] Run `hive --version`. ORC schema evolution is supported from Hive 1.1+; `hive.exec.schema.evolution` requires Hive 2.1+. Ensure reader and writer Hive versions are compatible.
+
+[Repair steps]
+1. Inspect the file schema: `hive --orcfiledump <file>`.
+2. Align the table: `ALTER TABLE t ADD COLUMNS (...)` matching file order and types.
+3. Enable evolution: `SET hive.exec.schema.evolution=true;` (Hive 2.1+).
+4. If misalignment persists, rewrite data: `INSERT OVERWRITE` into a table whose DDL matches the file schema.","[Root cause]
+The read fails because the ORC file schema differs from the table definition (added/changed columns not synced).
+
+[Version check]
+No version numbers appear in the retrieved evidence; no component-version pairs are claimed or assumed.
+
+[Repair steps]
+None supported by the retrieved evidence.",0,1,1,0,
+491,hbase,A single-row get in an HBase table is slow; I suspect missing column families or BloomFilter. How do I optimize?,Slow single-row reads are often caused by scanning too many blocks or missing a BloomFilter; column-family design affects the read path.,"Enable a BloomFilter for the column family, optimize rowkey locality, reduce random block reads, and improve get performance.","[Root cause]
+The get is scanning excess blocks because the column family lacks a BloomFilter or is poorly designed, forcing HBase to check many store files.
+
+[Version check]
+Run `hbase version`, then in HBase shell: `describe 'table'` — confirm the target family's BLOOMFILTER attribute (NONE vs ROW/ROWCOL) and family count.
+
+[Repair steps]
+1. Enable a BloomFilter: `alter 'table', {NAME=>'cf', BLOOMFILTER=>'ROW'}`
+2. Trigger `major_compact 'table'` so new filters are built on flush/compaction.
+3. Review column-family design: keep hot reads in one family; avoid unnecessary families.
+4. Re-test the get latency and verify block scan count via RegionServer metrics.","[Root cause]
+Slow single-row reads are often caused by scanning too many blocks or a missing BloomFilter; column-family design affects the read path.
+
+[Version check]
+None — no version numbers appear in the evidence.
+
+[Repair steps]
+None supported by the evidence.",1,1,1,0,

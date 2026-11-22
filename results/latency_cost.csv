@@ -1,0 +1,5 @@
+config,n,mean_latency_ms,p95_latency_ms,llm_calls_per_case,total_llm_calls,prompt_tokens,completion_tokens,cost_usd
+Baseline RAG,100,6617.4,12526.8,1,100,14637,39649,0.0
+Proposer only,100,12214.1,23899.9,1,100,24276,82900,0.0
+Proposer + Reviser,100,35958.0,62936.8,2,200,62576,208729,0.0
+Full pipeline,100,48895.5,95203.7,3,300,93009,350326,0.0

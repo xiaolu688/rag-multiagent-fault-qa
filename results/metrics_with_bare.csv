@@ -1,0 +1,4 @@
+config,n,EM,EM_rate,EM_CI,wordF1,rougeL,version_halluc_rate,refuse_rate,three_sections,mean_len_words,mean_latency_ms,prompt_tokens,completion_tokens
+Bare LLM (zero-shot),100,0/100,0.0,"[0.000,0.037]",0.1346,0.0619,0.69,0.0,0.85,501.0,126352.3,16444,712863
+Single RAG (oracle ctx),100,0/100,0.0,"[0.000,0.037]",0.2629,0.1492,0.35,0.0,1.0,121.1,,,
+Full multi-agent,100,0/100,0.0,"[0.000,0.037]",0.2135,0.1354,0.0,0.16,0.84,49.4,,,

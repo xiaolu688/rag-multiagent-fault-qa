@@ -1,0 +1,26 @@
+{
+  "n": 500,
+  "per_component": {
+    "hadoop": 125,
+    "spark": 125,
+    "hive": 125,
+    "hbase": 125
+  },
+  "per_split": {
+    "kb": 400,
+    "test": 100
+  },
+  "per_component_split": {
+    "hadoop/kb": 100,
+    "hadoop/test": 25,
+    "spark/kb": 100,
+    "spark/test": 25,
+    "hive/kb": 100,
+    "hive/test": 25,
+    "hbase/test": 25,
+    "hbase/kb": 100
+  },
+  "test_question_leak": 0,
+  "test_evidence_leak": 0,
+  "ok": true
+}

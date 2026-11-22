@@ -1,0 +1,25 @@
+# Single-turn RAG baseline: identical evidence and prompt scaffolding,
+# no Proposer/Reviser/Checker agents.
+experiment: baseline
+seed: 42
+
+model:
+  name: glm-5.3-flash
+  base_url: https://open.bigmodel.cn/api/paas/v4
+  temperature: 0.1
+  top_p: 0.8
+  max_new_tokens: 3072
+  empty_output_retry_tokens: 8192
+
+retrieval:
+  mode: oracle_evidence
+  top_k: 5
+  fusion: 0.5
+
+data:
+  path: data/bigdata_error_cases_500_en.csv
+  split: {kb: 400, test: 100}
+
+pricing:
+  PRICE_IN_PER_M: 0
+  PRICE_OUT_PER_M: 0

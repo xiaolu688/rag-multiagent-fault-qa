@@ -1,0 +1,6 @@
+# Python 3.10+ (tested on 3.11)
+openai>=1.30,<4          # OpenAI-compatible client (tested against Zhipu BigModel)
+numpy>=1.24
+PyYAML>=6.0
+matplotlib>=3.7          # figures only
+scipy>=1.10              # optional: Wilcoxon signed-rank tests

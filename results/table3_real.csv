@@ -1,0 +1,5 @@
+config,EM,rate,CI
+Baseline RAG,0/100,0.000,"[0.000, 0.037]"
+Proposer only,0/100,0.000,"[0.000, 0.037]"
+Proposer + Reviser,0/100,0.000,"[0.000, 0.037]"
+Full pipeline,0/100,0.000,"[0.000, 0.037]"

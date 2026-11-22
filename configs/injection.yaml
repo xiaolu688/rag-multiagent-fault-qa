@@ -1,0 +1,16 @@
+# Evidence-poisoning experiment: each of the 27 sampled cases is run twice,
+# once with a corrupted evidence span (upstream error) and once clean.
+experiment: injection
+seed: 42
+cases: 27
+conditions: [tampered, clean]
+
+model:
+  name: glm-5.3-flash
+  base_url: https://open.bigmodel.cn/api/paas/v4
+  temperature: 0.1
+  top_p: 0.8
+  max_new_tokens: 3072
+
+data:
+  path: data/bigdata_error_cases_500_en.csv

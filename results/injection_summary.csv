@@ -1,0 +1,3 @@
+﻿config,n,propagation_rate,propagated,correction_rate,corrected,escape_rate,escaped,unclassified,ci95_propagation
+baseline,27,0.9259,25,0.037,1,0.1111,3,1,"[0.766, 0.979]"
+full,27,0.5185,14,0.4815,13,0.3704,10,0,"[0.340, 0.693]"
