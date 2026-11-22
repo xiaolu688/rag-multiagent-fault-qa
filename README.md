@@ -259,15 +259,17 @@ Significance (exact McNemar on hallucination, Wilcoxon signed-rank on per-case F
 | bare → single RAG | 0.69 → 0.35 | b=37, c=3, p=1.9×10⁻⁸ | 0.1346 → 0.2629 | p=5.4×10⁻¹⁸ |
 | single RAG → full | 0.35 → 0.00 | b=35, c=0, p=5.8×10⁻¹¹ | 0.2629 → 0.2135 | p=6.6×10⁻⁶ |
 
-Other committed results: `results/version_filter_summary.json` (deterministic filter wins on
-deleting invented versions, loses on matching the right one: version-level 0.00, combination
-level 0.03, recall 14/15 vs 9/15), `results/injection_summary.csv` (propagation 0.93 → 0.52,
+Other committed results: `results/version_filter_summary.json` (the deterministic filter is a version-level
+control only: version-level hallucination 0.00 and recall 14/15 vs 9/15, while component-version
+pairing cannot be judged by a string rule and is therefore not scored; see Section 5.3), `results/injection_summary.csv` (propagation 0.93 → 0.52,
 escape 0.11 → 0.37 under a clean-then-tampered comparison), `results/fs_er_human_scores_20.csv`
 (20-case human sheet: factual support 0.750 → 1.000, executable repair 0.950 → 0.350).
 
 The two 20-case sheets are **hand-filled, not script-generated**: the coding rules are printed
-in the `VC说明` column of `results/vc_scoring_template_20.csv`, and the author scored all 80
-cells (20 cases × 4 columns) by reading each prediction. An AI-drafted suggestion was used as
+in the `VC说明` column of `results/vc_scoring_template_20.csv`, and the author scored all 120
+judgement dimensions (20 cases × 2 systems × VC/FS/ER) by reading each prediction.
+`vc_scoring_template_20.csv` is the same sheet with the two VC columns left blank: it is a blank
+form, not a second independent annotation. An AI-drafted suggestion was used as
 a starting point and the author adopted it in every cell (agreement 100%), so the final sheet
 and the suggestion coincide and only one file is shipped. Because this is a single annotator
 with AI pre-annotation, the paper reports it as a consistency check and states the limited
@@ -275,6 +277,12 @@ power (FS b=0/c=5, p=0.0625; ER b=13/c=1, p=0.0018) rather than as a blind human
 
 Strict EM is 0 for every configuration because gold answers are multi-step numbered
 procedures; the paper reports this as a finding about the metric, not as a system failure.
+
+Data-caveat notes: `token_ledger.csv` carries a `config` column because its 100 rows are the
+sum of the four ablation configurations; `metrics_with_bare.csv` takes the latency and token
+columns for single RAG and the full pipeline from `latency_cost.csv`; the 69 bare-model retries
+are reported from the run log but were not logged per case, so `bare_preds.csv` has no retry
+column; `cost_usd` is 0 everywhere because platform credit covered the calls.
 
 ## 12. Pretrained models and checkpoints
 

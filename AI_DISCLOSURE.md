@@ -15,12 +15,13 @@ Big-Data Laboratory Troubleshooting". Author: Yajie Gao.
 
 ## 2. What the AI assistant did **not** do
 
-* It did **not** run the experiments. All 923 model calls (700 for the main experiment,
-  169 for the bare baseline including retries, 54 for the injection experiment) were launched
+* It did **not** run the experiments. All 977 model calls (700 for the main experiment,
+  169 for the bare baseline including retries, 108 for the injection experiment: 27 cases ×
+  [1 single-pass RAG call + 3 pipeline calls]) were launched
   by the author on the author's machine; the timings and token counts in `results/` are
   measured, not estimated. The per-run breakdown is in `results/experiment_log.csv`.
 * It did **not** fill in the human evaluation sheets. The AI drafted a suggested score for
-  each of the 80 cells (20 cases × FS/ER × baseline/pipeline); the author read every prediction
+  each of the 120 judgements (20 cases × 3 dimensions × baseline/pipeline: VC 40, FS 40, ER 40); the author read every prediction
   against the evidence and adopted all of the suggestions (agreement 100%), so the shipped
   sheets (`results/fs_er_human_scores_20.csv`, `results/vc_manual_scores_20.csv`) coincide
   with the draft and only one version is committed. The coding rules are printed in

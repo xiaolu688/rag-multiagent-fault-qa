@@ -1,6 +1,6 @@
 run_id,date,config,model,cases,calls,notes
 R1,2026-11,main_experiment,glm-5.3-flash,100,700,"4 configs x 100 cases; latency 6.6/12.2/36.0/48.9 s; tokens 194498 in / 681604 out; cost USD 0"
 R2,2026-11,bare_baseline,glm-5.3-flash,100,169,"100 successful + 69 fallback retries (empty content); mean latency 126.4 s, p95 360 s"
-R3,2026-11,injection,glm-5.3-flash,27,54,"27 cases x 2 conditions (tampered / clean)"
+R3,2026-11,injection,glm-5.3-flash,27,108,"27 cases x 2 configs (baseline, full); 1 call per baseline case + 3 calls per pipeline case"
 R4,2026-11,deterministic_filter,none,100,0,"rule-based, zero model calls"
 R5,2026-11,human_fs_er,none,20,0,"20 sampled cases, 4 judgement columns, single annotator"
