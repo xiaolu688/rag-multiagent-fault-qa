@@ -59,7 +59,7 @@ ax.set_xticks(x)
 ax.set_xticklabels(configs, fontsize=10.5)
 ax.tick_params(axis="y", labelsize=9.5)
 ax2.tick_params(axis="y", labelsize=9.5)
-ax.set_title("Ablation study: hallucination cleared, coverage falling in step", fontsize=12.5, pad=12)
+ax.set_title("Ablation study: hallucination cleared, coverage lower overall", fontsize=12.5, pad=12)
 ax.legend([bars, line], ["Word-level F1", "Version-hallucination rate"], loc="upper right",
           fontsize=9.5, frameon=False)
 
