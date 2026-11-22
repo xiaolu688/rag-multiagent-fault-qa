@@ -1,10 +1,11 @@
-# Research on Big-data-Lab Troubleshooting Question-Answering System Based on RAG and Multi-Agent Collaboration
-
-*Earlier working subtitle: "Verifying Version-Compatibility Claims" — retained for traceability; the canonical title is the one above.*
+# Research on Big-Data-Laboratory Troubleshooting Question-Answering System Based on RAG and Multi-Agent Collaboration
 
 Reproducibility package for the final paper *"基于 RAG 与多智能体协同的大数据实验室故障排查问答系统研究"*
-— English title: *Research on Big-data-Lab Troubleshooting Q-A System Based on RAG and
-Multi-Agent Collaboration* (Yajie Gao, Wenzhou-Kean University, course 5801).
+— English title: *Research on Big-Data-Laboratory Troubleshooting Question-Answering System
+Based on RAG and Multi-Agent Collaboration* (Yajie Gao, Wenzhou-Kean University, course 5801).
+This exact string is used as the H1, the bibtex `title`, the repository description and the
+manuscript title; the earlier working subtitle "Verifying Version-Compatibility Claims" is
+dropped.
 
 The system answers troubleshooting questions about a Hadoop / Spark / Hive / HBase teaching
 cluster. Its distinguishing problem is **version compatibility**: the same error text has a
@@ -133,6 +134,7 @@ Recorded settings (all in `configs/proposed_model.yaml`):
 | seeds | split seed 42 (frozen, shipped in the CSV); prompts and decoding contain no random sampling |
 | decoding | deterministic-ish (temperature 0.1); the provider exposes no seed parameter |
 | retrieval parameters | BM25 `k=5`, Chroma `k=5`, fusion 0.5/0.5, embedding `all-MiniLM-L6-v2` — **design values**, see §6 |
+| similarity threshold | Chroma `similarity_threshold=0.7` — **design value only, never applied** (oracle evidence is used, see §6) |
 | pricing | API credits were donated → cost logged as USD 0 |
 
 No machine-specific paths are hard-coded: the four experiment drivers (`run_real_experiment`,
@@ -301,7 +303,7 @@ column; `cost_usd` is 0 everywhere because platform credit covered the calls.
 ```bibtex
 @misc{gao2026ragtroubleshooting,
   author = {Gao, Yajie},
-  title  = {Research on Big-data-Lab Troubleshooting Question-Answering System Based on RAG and Multi-Agent Collaboration},
+  title  = {Research on Big-Data-Laboratory Troubleshooting Question-Answering System Based on RAG and Multi-Agent Collaboration},
   year   = {2026},
   note   = {Course 5801 final paper, Wenzhou-Kean University},
   url    = {https://github.com/xiaolu688/rag-multiagent-fault-qa}
