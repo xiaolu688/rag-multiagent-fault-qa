@@ -200,7 +200,7 @@ Reproducing the system therefore means re-running inference (§9), not fitting w
 ```bash
 # 100 test cases, 4 configurations (baseline, proposer, reviser, full) = 700 calls
 python src/run_real_experiment.py --limit 5      # smoke test first
-python src/run_real_experiment.py                # full run (~2.5 h)
+python src/run_real_experiment.py                # full run (~2.9 h)
 
 # bare LLM baseline (no evidence), 100 cases, 3-level fallback on empty output
 python src/run_bare_baseline.py --limit 5
@@ -338,7 +338,7 @@ pip install -r requirements.txt
 # 1. data checks (no API key needed)
 python src/preprocessing.py
 
-# 2. re-run inference (needs a key; ~2.5 h for the full 700 calls)
+# 2. re-run inference (needs a key; ~2.9 h for the full 700 calls)
 python src/run_real_experiment.py
 python src/run_bare_baseline.py
 python src/run_injection.py
