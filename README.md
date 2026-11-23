@@ -305,7 +305,7 @@ column; `cost_usd` is 0 everywhere because platform credit covered the calls.
   author = {Gao, Yajie},
   title  = {Research on Big-Data-Laboratory Troubleshooting Question-Answering System Based on RAG and Multi-Agent Collaboration},
   year   = {2026},
-  note   = {Course 5801 final paper, Wenzhou-Kean University},
+  note   = {CPS 5801 final paper, Wenzhou-Kean University},
   url    = {https://github.com/xiaolu688/rag-multiagent-fault-qa}
 }
 ```
