@@ -4,3 +4,4 @@ baseline -> pipeline,version_hallucination,McNemar exact binomial,35,0,,5.82e-11
 bare -> baseline,word_f1,Wilcoxon signed-rank,,,11.000,5.43e-18
 baseline -> pipeline,word_f1,Wilcoxon signed-rank,,,1214.000,6.56e-06
 bare -> pipeline,word_f1,Wilcoxon signed-rank,,,766.000,1.47e-09
+bare -> pipeline,version_hallucination,McNemar exact binomial,69,0,,3.39e-21

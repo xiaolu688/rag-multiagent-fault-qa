@@ -267,7 +267,7 @@ Significance (exact McNemar on hallucination, Wilcoxon signed-rank on per-case F
 Other committed results: `results/version_filter_summary.json` (the deterministic filter is a version-level
 control only: version-level hallucination 0.00 and recall 14/15 vs 9/15, while component-version
 pairing cannot be judged by a string rule and is therefore not scored; see Section 5.3), `results/injection_summary.csv` (propagation 0.93 → 0.52,
-escape 0.11 → 0.37 under a clean-then-tampered comparison), `results/fs_er_human_scores_20.csv`
+escape 0.11 → 0.37 for baseline vs. the full pipeline, with tamper and append injections), `results/fs_er_human_scores_20.csv`
 (20-case human sheet: factual support 0.750 → 1.000, executable repair 0.950 → 0.350).
 
 The two 20-case sheets are **hand-filled, not script-generated**: the coding rules are printed
