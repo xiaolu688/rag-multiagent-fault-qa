@@ -2,7 +2,7 @@
 
 Reproducibility package for the final paper *"基于 RAG 与多智能体协同的大数据实验室故障排查问答系统研究"*
 — English title: *Research on Big-Data-Laboratory Troubleshooting Question-Answering System
-Based on RAG and Multi-Agent Collaboration* (Yajie Gao, Wenzhou-Kean University, course 5801).
+Based on RAG and Multi-Agent Collaboration* (Yajie Gao, Wenzhou-Kean University, CPS 5801).
 This exact string is used as the H1, the bibtex `title`, the repository description and the
 manuscript title; the earlier working subtitle "Verifying Version-Compatibility Claims" is
 dropped.
@@ -107,7 +107,7 @@ rag-multiagent-fault-qa/
   server exposing an OpenAI-compatible `/v1` route — the A5000 (24 GB) fits a 7B-class
   model at 4-bit, and nothing else in the code has to change.
 * Wall-clock for the full main experiment (700 model calls, 100 cases × 4 configurations):
-  about 2.5 hours on the MacBook Air, dominated by remote API latency (mean 6.6 s per
+  about 2.9 hours on the MacBook Air, dominated by remote API latency (mean 6.6 s per
   single-turn call, 48.9 s per full-pipeline case). Re-running evaluation only takes
   seconds and needs no API at all.
 
@@ -266,7 +266,7 @@ Significance (exact McNemar on hallucination, Wilcoxon signed-rank on per-case F
 
 Other committed results: `results/version_filter_summary.json` (the deterministic filter is a version-level
 control only: version-level hallucination 0.00 and recall 14/15 vs 9/15, while component-version
-pairing cannot be judged by a string rule and is therefore not scored; see Section 5.3), `results/injection_summary.csv` (propagation 0.93 → 0.52,
+pairing cannot be judged by a string rule and is therefore not scored; see Section V-C), `results/injection_summary.csv` (propagation 0.93 → 0.52,
 escape 0.11 → 0.37 for baseline vs. the full pipeline, with tamper and append injections), `results/fs_er_human_scores_20.csv`
 (20-case human sheet: factual support 0.750 → 1.000, executable repair 0.950 → 0.350).
 
@@ -276,7 +276,7 @@ judgement dimensions (20 cases × 2 systems × VC/FS/ER) by reading each predict
 `vc_scoring_template_20.csv` is the same sheet with the two VC columns left blank: it is a blank
 form, not a second independent annotation. An AI-drafted suggestion was used as
 a starting point and the author adopted it in every cell (agreement 100%), so the final sheet
-and the suggestion coincide and only one file is shipped. Because this is a single annotator
+and the suggestion coincide and only one filled sheet is shipped. Because this is a single annotator
 with AI pre-annotation, the paper reports it as a consistency check and states the limited
 power (FS b=0/c=5, p=0.0625; ER b=13/c=1, p=0.0018) rather than as a blind human study.
 
