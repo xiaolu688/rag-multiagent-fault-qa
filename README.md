@@ -261,7 +261,7 @@ Significance (exact McNemar on hallucination, Wilcoxon signed-rank on per-case F
 | comparison | hallucination | McNemar | word F1 | Wilcoxon |
 |---|---|---|---|---|
 | bare → single RAG | 0.69 → 0.35 | b=37, c=3, p=1.9×10⁻⁸ | 0.1346 → 0.2629 | p=5.4×10⁻¹⁸ |
-| single RAG → full | 0.35 → 0.00 | b=35, c=0, p=5.8×10⁻¹¹ | 0.2629 → 0.2135 | p=6.6×10⁻⁶ |
+| single RAG → full | 0.35 → 0.00 | b=35, c=0, p≈5.8×10⁻¹¹ | 0.2629 → 0.2135 | p=6.6×10⁻⁶ |
 | bare → full | 0.69 → 0.00 | b=69, c=0, p=3.4×10⁻²¹ | 0.1346 → 0.2135 | p≈1.5×10⁻⁹ |
 
 Other committed results: `results/version_filter_summary.json` (the deterministic filter is a version-level
