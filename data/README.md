@@ -21,7 +21,7 @@ number will answer fluently and wrongly.
 | `question` | the student's question, as asked |
 | `context` | evidence span (≈190 characters) from the documentation that governs the case |
 | `ground_truth` | verified repair procedure, 3–5 numbered steps |
-| `source` | URL of the governing document (Apache docs, Apache JIRA, Stack Overflow) or the course laboratory fault log |
+| `source` | URL of the supporting page: mostly Apache official documentation and project wikis, plus vendor documentation and technical community posts |
 | `split` | `kb` (retrieval knowledge base, 400) or `test` (held-out evaluation set, 100) |
 | `status` | `verified` for all rows |
 
