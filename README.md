@@ -166,7 +166,7 @@ reproduced without any API key** (steps 8–9 below).
 | fields | `id, component, question, context, ground_truth, source, split, status` |
 | evidence | `context` — the documentation span that governs the case (≈190 characters) |
 | gold | `ground_truth` — a 3–5 step repair procedure |
-| sources | Apache official docs, Apache JIRA tickets, Stack Overflow threads, and the course laboratory's own fault log; each row carries its `source` URL |
+| sources | Supporting-page URLs: mostly Apache official documentation and project wikis, plus vendor documentation (Cloudera, Huawei Cloud, Alibaba Cloud, Microsoft Learn) and technical community posts (Stack Overflow, CSDN, Cnblogs); each row carries its `source` URL |
 | split | frozen: `kb` = 400, `test` = 100, stratified 8:2 per component, seed 42 |
 | leakage | verified zero: no test question and no test evidence span appears in `kb` |
 
