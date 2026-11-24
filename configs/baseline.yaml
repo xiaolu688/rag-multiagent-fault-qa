@@ -1,5 +1,5 @@
-# Single-turn RAG baseline: identical evidence and prompt scaffolding,
-# no Proposer/Reviser/Checker agents.
+# Single-turn RAG baseline: same evidence and system message, but a separate
+# single-turn user prompt; no Proposer/Reviser/Checker agents.
 experiment: baseline
 seed: 42
 
