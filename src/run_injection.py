@@ -7,7 +7,7 @@ appending a false statement. The experiment then measures whether the error reac
 the final answer and whether the checking chain catches it.
 
 Run from the repository root:
-    RAG_CONFIG=configs/injection.yaml python src/run_injection.py   # 27 cases, both conditions
+    RAG_CONFIG=configs/injection.yaml python src/run_injection.py   # 27 cases, both system configurations
     RAG_CONFIG=configs/injection.yaml python src/run_injection.py --limit 5
     RAG_CONFIG=configs/injection.yaml python src/run_injection.py --sleep 1  # rate limiting
 
