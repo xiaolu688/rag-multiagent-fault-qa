@@ -345,7 +345,7 @@ python src/preprocessing.py
 # 2. re-run inference (needs a key; ~2.9 h for the full 700 calls)
 python src/run_real_experiment.py
 python src/run_bare_baseline.py
-python src/run_injection.py
+RAG_CONFIG=configs/injection.yaml python src/run_injection.py
 
 # 3. deterministic baselines and evaluation (no API key needed)
 python src/filter_baseline.py
