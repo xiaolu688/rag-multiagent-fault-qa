@@ -1,9 +1,9 @@
-# Evidence-poisoning experiment: each of the 27 sampled cases is run twice,
-# once with a corrupted evidence span (upstream error) and once clean.
+# Evidence-poisoning experiment: each of the 27 sampled cases is run under
+# two system configurations (single-pass RAG and the full pipeline), always
+# on corrupted evidence; the two tampering modes are `tamper` and `append`.
 experiment: injection
 seed: 42
 cases: 27
-conditions: [tampered, clean]
 
 model:
   name: glm-5.3-flash
@@ -11,6 +11,10 @@ model:
   temperature: 0.1
   top_p: 0.8
   max_new_tokens: 3072
+
+pricing:                       # API credits were donated; cost is logged as 0
+  PRICE_IN_PER_M: 0
+  PRICE_OUT_PER_M: 0
 
 data:
   path: data/bigdata_error_cases_500_en.csv
