@@ -7,7 +7,7 @@ Run from the repository root:
 
 Outputs
     results/bare_preds.csv          per-case predictions (case_id, question, gold, pred, ms, in, out)
-    results/metrics_with_bare.csv   unified metric table (bare + the three pipeline configurations)
+    results/metrics_with_bare.csv   unified metric table (bare, single-pass RAG, and full pipeline)
 
 Interrupted runs resume from results/bare_progress.jsonl.
 """
@@ -162,16 +162,24 @@ def main():
         for r in rows:
             w.writerow({k: r[k] for k in w.fieldnames})
 
-    # ---- metrics: the context is the evidence; a version outside it counts as unsupported ----
-    evid = {}
+    # ---- metrics ----
+    # Bare-LLM has no context, so its evidence set is the reference answer only.
+    # The evidence-based configurations use context U gold, matching the paper's
+    # Appendix C.5 definition; the question is not treated as evidence.
+    ctx = {}
     for r in csv.DictReader(open(DATA, encoding="utf-8-sig")):
-        evid[str(r["id"])] = str(r["context"]) + " " + str(r["question"])
+        ctx[str(r["id"])] = str(r["context"])
 
-    def metrics(preds, golds, ids, ms=None, tin=None, tout=None):
+    def metrics(preds, golds, ids, ms=None, tin=None, tout=None, include_context=True):
         F = [f1(g, p) for g, p in zip(golds, preds)]
         R = [rouge_l(g, p) for g, p in zip(golds, preds)]
-        hal = sum(1 for p, k in zip(preds, ids)
-                  if any(v not in evid.get(k, "") for v in VER.findall(str(p))))
+        hal = 0
+        for p, k, g in zip(preds, ids, golds):
+            ev = set(VER.findall(str(g)))
+            if include_context:
+                ev |= set(VER.findall(ctx.get(k, "")))
+            if any(v not in ev for v in VER.findall(str(p))):
+                hal += 1
         ref = sum(1 for p in preds if "NOT COVERED" in str(p).upper())
         sec = sum(1 for p in preds if all(s in str(p) for s in
                                           ["Root cause", "Version check", "Repair steps"]))
@@ -190,18 +198,27 @@ def main():
     table = [dict(config="Bare LLM (zero-shot)", **metrics(
         [r["pred"] for r in rows], [r["gold"] for r in rows],
         [r["case_id"] for r in rows], [float(r["ms"]) for r in rows],
-        [int(r["in"]) for r in rows], [int(r["out"]) for r in rows]))]
+        [int(r["in"]) for r in rows], [int(r["out"]) for r in rows], include_context=False))]
 
     if os.path.exists(COMP):
         d = list(csv.DictReader(open(COMP, encoding="utf-8")))
-        for c, name in [("baseline", "Single RAG (oracle ctx)"), ("pipeline", "Full multi-agent")]:
+        lat = {}
+        if os.path.exists("results/latency_cost.csv"):
+            for x in csv.DictReader(open("results/latency_cost.csv", encoding="utf-8")):
+                lat[x["config"]] = x
+        for c, name, lat_name in [("baseline", "Single RAG (oracle ctx)", "Baseline RAG"),
+                                  ("pipeline", "Full multi-agent", "Full pipeline")]:
+            l = lat.get(lat_name, {})
             table.append(dict(config=name, **metrics(
-                [r[f"{c}_pred"] for r in d], [r["gold"] for r in d], [r["case_id"] for r in d])))
+                [r[f"{c}_pred"] for r in d], [r["gold"] for r in d], [r["case_id"] for r in d],
+                ms=[float(l["mean_latency_ms"])] if l else None,
+                tin=[int(l["prompt_tokens"])] if l else None,
+                tout=[int(l["completion_tokens"])] if l else None)))
 
     cols = ["config", "n", "EM", "EM_rate", "EM_CI", "wordF1", "rougeL",
             "version_halluc_rate", "refuse_rate", "three_sections",
             "mean_len_words", "mean_latency_ms", "prompt_tokens", "completion_tokens"]
-    with open("results/metrics_with_bare.csv", "w", encoding="utf-8", newline="") as f:
+    with open("results/metrics_with_bare.csv", "w", encoding="utf-8-sig", newline="") as f:
         w = csv.DictWriter(f, fieldnames=cols, extrasaction="ignore")
         w.writeheader()
         for t in table:
