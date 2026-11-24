@@ -276,7 +276,9 @@ judgement dimensions (20 cases × 2 systems × VC/FS/ER) by reading each predict
 `vc_scoring_template_20.csv` is the same sheet with the two VC columns left blank: it is a blank
 form, not a second independent annotation. An AI-drafted suggestion was used as
 a starting point and the author adopted it in every cell (agreement 100%), so the final sheet
-and the suggestion coincide and only one filled sheet is shipped. Because this is a single annotator
+and the suggestion coincide. The package ships one filled VC sheet; `vc_scoring_template_20.csv`
+is the blank template. The FS/ER sheet is shipped separately as `fs_er_human_scores_20.csv`.
+Because this is a single annotator
 with AI pre-annotation, the paper reports it as a consistency check and states the limited
 power (FS b=0/c=5, p=0.0625; ER b=13/c=1, p=0.0018) rather than as a blind human study.
 
