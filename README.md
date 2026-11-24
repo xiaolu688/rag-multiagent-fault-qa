@@ -212,7 +212,7 @@ and the ablation metrics to `results/metrics_real.csv`; `results/table3_real.csv
 `results/real_run_progress.jsonl` (git-ignored, created on the first run), so an interrupted
 run resumes where it stopped.
 
-Evidence-poisoning experiment (Table 8), 27 cases × 2 conditions:
+Evidence-poisoning experiment (Table 8), 27 cases × 2 system configurations:
 
 ```bash
 RAG_CONFIG=configs/injection.yaml python src/run_injection.py
