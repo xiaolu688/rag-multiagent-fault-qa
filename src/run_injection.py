@@ -7,9 +7,9 @@ appending a false statement. The experiment then measures whether the error reac
 the final answer and whether the checking chain catches it.
 
 Run from the repository root:
-    python src/run_injection.py               # every test case that names a version, 2 configurations
-    python src/run_injection.py --limit 5
-    python src/run_injection.py --sleep 1     # 1 s between calls, to respect rate limits
+    RAG_CONFIG=configs/injection.yaml python src/run_injection.py   # 27 cases, both conditions
+    RAG_CONFIG=configs/injection.yaml python src/run_injection.py --limit 5
+    RAG_CONFIG=configs/injection.yaml python src/run_injection.py --sleep 1  # rate limiting
 
 Outputs
     results/injection_results.csv   per case: injection type, injected version, original versions,
