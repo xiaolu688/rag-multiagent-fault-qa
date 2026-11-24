@@ -11,7 +11,7 @@ case_id,component,question,gold,baseline_pred,pipeline_pred,VC_baseline,VC_pipel
 The DataNode exits at startup because the clusterID in its local current/VERSION file doesn't exactly match the NameNode's.
 
 [Version check]
-None — no version",1,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（幻觉）
+None — no version",1,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（版本无据）
 9,hadoop,Running a job on Hadoop 2.7 reports java.lang.UnsupportedClassVersionError: Unsupported major.minor version 52.0. What does this mean?,"Check the running JVM with java -version; upgrade the runtime JDK to match the compile version (Hadoop 2.7 recommends Java 7/8, Hadoop 3.x requires Java 8 or higher), export JAVA_HOME in hadoop-env.sh to point to the higher JDK, restart the cluster, then run the job again.","[Root cause] Major.minor 52.0 = class file compiled for Java 8. Your JVM is older (likely Java 7), so it can't load classes compiled with JDK 8. Hadoop 2.x requires Java 7/8; mixing versions triggers this error.
 
 [Version check] Run `java -version` (runtime) and `javac -version` (compiler). Check `echo $JAVA_HOME` and the JVM Hadoop actually uses (`hadoop version`). Confirm no custom jars were compiled with JDK 8 while nodes run Java 7.
@@ -20,7 +20,7 @@ None — no version",1,1,2=给出版本且与证据/标准答案一致；1=明�
 
 [Version check] 52.0 = Java 8; Hadoop 2.x requires Java 7/8; Hadoop 3.x jars are compiled targeting Java 8 — all evidence-supported.
 
-[Repair steps] None supported by the evidence.",0,2,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（幻觉）
+[Repair steps] None supported by the evidence.",0,2,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（版本无据）
 52,spark,"After Spark 3.1, yarn.application.classpath is no longer automatically injected into applications, causing Guava/Jackson conflicts. How do I handle this?","Prefer keeping Spark's bundled dependency versions; do not manually put the cluster's guava/jackson jars on --jars. If you truly need to restore the pre-Spark 3.0 propagation behavior, set spark.hadoop.hadoopConf.yarn.application.classpath=<value> per the official migration guide, and repackage/shade your third-party dependencies.","[Root cause] Since Spark 3.1, Hadoop-bundled Spark distributions no longer propagate `yarn.application.classpath` and `mapreduce.application.classpath` to YARN-submitted apps by default—intentionally, to keep Hadoop's transitive dependencies (Guava, Jackson) from clashing with Spark's own versions.
 
 [Version check] Confirm your Spark version is ≥ 3.1 and inspect `spark-defaults.conf` for any `spark.hadoop.hadoopConf.yarn.app.classpath`-related settings.
@@ -33,7 +33,7 @@ Spark 3.1 (no case id in evidence)
 
 [Repair steps]
 1. Set the parameter(s) related to spark.hadoop.hadoopConf.yarn.app.classpath to restore classpath propagation (exact file/location UNVERIFIED).
-2. Caution: the default isolates Spark from cluster transitive dependencies; restoring it may reintroduce Guava/Jackson clashes.",2,2,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（幻觉）
+2. Caution: the default isolates Spark from cluster transitive dependencies; restoring it may reintroduce Guava/Jackson clashes.",2,2,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（版本无据）
 56,spark,"spark-submit reports com.fasterxml.jackson.databind.JsonMappingException.<init>(Closeable,String)V at JacksonModule.setupModule. How do I handle this?","Downgrade jackson-databind to the version matching Spark's bundled one (for example, from 2.13.5 down to 2.12.x), or upgrade jackson-module-scala to the corresponding version; repackage the fat jar and use dependency:tree to confirm there is ultimately only one jackson-databind.","[Root cause] jackson-module-scala and jackson-databind versions are mismatched. Databind was upgraded/downgraded, so the JsonMappingException.<init>(Closeable,String) constructor no longer exists, and JacksonModule.setupModule throws NoSuchMethodError.
 
 [Version check] Run `spark-submit --version` and inspect the classpath: `mvn dependency:tree | grep jackson`. Confirm which databind version got pulled in versus the version your jackson-module-scala was compiled against.
@@ -47,7 +47,7 @@ Spark 3.1 (no case id in evidence)
 [Version check] Evidence states no version numbers or case ids.
 
 [Repair steps]
-1. Use a jackson-databind version strictly matching jackson-module-scala.",2,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（幻觉）
+1. Use a jackson-databind version strictly matching jackson-module-scala.",2,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（版本无据）
 89,spark,The Hadoop-free Spark running on K8s/YARN keeps missing Hadoop classes. How should SPARK_DIST_CLASSPATH be configured?,"export SPARK_DIST_CLASSPATH=$($HADOOP_HOME/bin/hadoop classpath); in the K8s case, install the corresponding Hadoop in the executor image's Dockerfile and set the correct SPARK_DIST_CLASSPATH; also configure HADOOP_CONF_DIR correctly.","[Root cause] The Hadoop-free Spark build does not bundle Hadoop client jars; if `SPARK_DIST_CLASSPATH` is unset or incomplete, FileSystem/YARN classes cannot load.
 
 [Version check] Confirm Spark is the `hadoop-free`/`without-hadoop` build and that the classpath jars match the cluster Hadoop version.
@@ -63,7 +63,7 @@ The Hadoop-free Spark distribution bundles no Hadoop client, so FileSystem/YARN 
 No version numbers appear in the evidence; no component-version pairs to verify.
 
 [Repair steps]
-1. Assemble the cluster Hadoop classpath into SPARK_DIST_CLASSPATH (exact command UNVERIFIED).",1,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（幻觉）
+1. Assemble the cluster Hadoop classpath into SPARK_DIST_CLASSPATH (exact command UNVERIFIED).",1,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（版本无据）
 127,hive,Hive reports SemanticException Unable to fetch table t. null — how to handle when the Metastore is Oracle.,"1) Review the Metastore log to locate the underlying ORA-00922 error; 2) check whether the CREATE TABLE statement contains column definitions or storage clauses not supported by Oracle; 3) if necessary, manually fix the dirty data in the Oracle metastore tables, or recreate the table using supported syntax; 4) it is not recommended to directly hack the database; prefer recreating through Hive DDL.","[Root cause]
 The Metastore backend is Oracle; the CREATE TABLE statement contained column/storage options Oracle rejects, causing ORA-00922: missing or invalid option. The Metastore can't fetch metadata, surfacing as ""Unable to fetch table t. null"".
 
@@ -80,7 +80,7 @@ Confirm Hive/Metastore version vs. Oracle JDBC driver and schema compatibility; 
 [Version check] No version numbers appear in the retrieved evidence; none asserted.
 
 [Repair steps]
-None supported by the retrieved evidence.",1,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（幻觉）
+None supported by the retrieved evidence.",1,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（版本无据）
 151,hbase,Can HBase 2.5 run directly on Hadoop 3.1.0? What causes NoSuchMethodError when starting the RegionServer?,"Do not run HBase 2.5 on Hadoop 3.1.x or 3.3.0/3.3.1. Upgrade Hadoop to 3.3.5+ (or 3.4.0+, which requires HBase 2.5.11+), and in distributed mode replace the hadoop jars bundled under the HBase lib directory (hbase.mapreduce, hadoop-common, hadoop-hdfs, etc.) with the jars matching the cluster's actual Hadoop; replace them consistently across the whole cluster and then restart.","[Root cause] No. HBase 2.5.x cannot run directly on Hadoop 3.1.0. The HBase official compatibility matrix marks Hadoop 3.1.0 as incompatible, and the Hadoop PMC itself declared 3.1.0 an unstable release. The NoSuchMethodError at RegionServer startup is caused by this version mismatch: HBase 2.5 is compiled against newer Hadoop APIs, so calls to methods missing in Hadoop 3.1.0 fail at runtime.
 
 [Version check] Verify with `hadoop version` and `hbase version`; confirm Hadoop 3.1.0 appears in the ""incompatible"" (✕) column of the HBase basic-prerequisites matrix.
@@ -92,7 +92,7 @@ Hadoop 3.1.0 is marked incompatible with HBase 2.5.x and is an unstable release 
 HBase 2.5.x; Hadoop 3.1.0 (incompatible); supported Hadoop: 2.10.2+, 3.2.3+, 3.3.2–3.3.4, 3.3.5+, 3.4.0+; also incompatible: 3.1.1+, 3.2.0–3.2.2, 3.3.0–3.3.1 (all per HBase prerequisites matrix). No case ids in evidence.
 
 [Repair steps]
-None supported by the evidence.",2,2,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（幻觉）
+None supported by the evidence.",2,2,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（版本无据）
 160,hbase,Reading an HFile written by HBase 2.0 directly with HBase 1.2 reports a version error. What should I do?,"Do not read across the downgrade. Upgrade path: first rolling-upgrade 1.x to the latest 1.x, then upgrade to 2.x; if rollback is needed, only roll back patch versions within the same minor release; major-version rollback requires backup and restore following the official rollback procedure.","[Root cause]
 HBase 2.0 introduced non-backward-compatible HFile format changes (HBASE-16189/HBASE-18945). Files written by 2.0 cannot be opened by older 1.x readers, so HBase 1.2 fails with a version error. This is by design, not corruption.
 
@@ -108,7 +108,7 @@ Alternatively, export the data from the 2.0 cluster and import into the 1.2 clus
 [Version check] 2.0, 1.0 (HBASE-16189/18945); 0.98→1.2→2.x (upgrade rule).
 
 [Repair steps]
-1. Upgrade 1.2→2.x — final leg of the 0.98→1.2→2.x path; never skip major versions.",2,2,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（幻觉）
+1. Upgrade 1.2→2.x — final leg of the 0.98→1.2→2.x path; never skip major versions.",2,2,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（版本无据）
 164,hbase,Why is there a version threshold when pairing HBase 2.5/2.6 with Hadoop 3.4.x?,"When using Hadoop 3.4.x, upgrade HBase to 2.5.11+ or 2.6.2+; otherwise fall back to Hadoop 3.3.5.","[Root cause] Hadoop 3.4.0 introduced API/dependency changes that HBase only validated starting with specific releases. Per the official matrix, HBase 2.5.11+ and 2.6.2+ are the first builds tested against Hadoop 3.4.x; HBase 2.5.0–2.5.10 with Hadoop 3.4.x is untested, so compatibility is not guaranteed.
 
 [Version check] Verify installed versions: `hbase version` and `hadoop version`. Flag any pairing of HBase ≤2.5.10 with Hadoop 3.4.0+.
@@ -119,7 +119,7 @@ Alternatively, export the data from the 2.0 cluster and import into the 1.2 clus
 
 [Repair steps]
 1. On HBase 2.5.0–2.5.10, upgrade to 2.5.11 or newer.
-2. On any HBase 2.6 release before 2.6.2, upgrade to 2.6.2 or newer.",2,2,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（幻觉）
+2. On any HBase 2.6 release before 2.6.2, upgrade to 2.6.2 or newer.",2,2,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（版本无据）
 200,hbase,"A node simultaneously runs leftover HMaster/HRegionServer processes from an uncleanly killed previous start, causing the new cluster to error out.","Use jps on each node to check for HMaster, HRegionServer, and HQuorumPeer; if any exist, kill them cleanly before running start-hbase.sh.","**[Root cause]** Leftover HMaster/HRegionServer/HQuorumPeer processes from an uncleanly killed previous start still occupy ports and lock data directories, so the new cluster conflicts and errors out on startup.
 
 **[Version check]** Verify Hadoop/HBase binary versions match on all nodes: run `hbase version` and `hadoop version` on each node and confirm identical releases and JAVA_HOME configuration before proceeding.
@@ -134,7 +134,7 @@ Alternatively, export the data from the 2.0 cluster and import into the 1.2 clus
 [Version check] None mentioned in the evidence; no versions claimed.
 
 [Repair steps]
-1. Before starting, ensure no leftover HMaster/HRegionServer/HQuorumPeer processes remain on all nodes.",1,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（幻觉）
+1. Before starting, ensure no leftover HMaster/HRegionServer/HQuorumPeer processes remain on all nodes.",1,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（版本无据）
 265,hadoop,"DataNode logs repeatedly show Slow block receiver, and write performance drops. How do I locate it?","Check disk space and IO (iostat) and NIC bandwidth, clean slow disks or replace disk slots, and lower write concurrency if needed.","[Root cause] ""Slow block receiver"" means the DataNode write pipeline is slow — typically disk IO bottleneck, insufficient network bandwidth, or a nearly full disk.
 
 [Version check] Run `hdfs version`; ensure all DataNodes run the same Hadoop release and review release notes/Jira for slow-receiver fixes in newer 2.x/3.x versions.
@@ -148,7 +148,7 @@ Alternatively, export the data from the 2.0 cluster and import into the 1.2 clus
 
 [Version check] None — the knowledge base contains no version numbers or case ids.
 
-[Repair steps] None — no repair steps are supported by the evidence.",1,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（幻觉）
+[Repair steps] None — no repair steps are supported by the evidence.",1,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（版本无据）
 266,hadoop,The data directory dfs.datanode.data.dir is configured with multiple disks. What happens when one disk is bad?,Replace the bad disk and clear the failed-volume state; the NameNode automatically replenishes replicas without restarting the whole cluster.,"[Root cause] A single bad disk is treated as a failed volume, not a DataNode failure. The DataNode excludes that volume from serving/writing blocks and continues running on the remaining disks; NameNode re-replicates the lost replicas elsewhere.
 
 [Version check] Multi-disk failure tolerance (volume failure handling) exists in Hadoop 2.x+ (HDFS-392). In Hadoop 1.x the DataNode exited when any data dir failed. Confirm via `hadoop version` and DataNode logs showing ""vol failure"" events.
@@ -158,7 +158,7 @@ Alternatively, export the data from the 2.0 cluster and import into the 1.2 clus
 2. Fix or replace the faulty disk; recreate the mount point directory with correct permissions.
 3. Restart the DataNode so it re-registers the recovered volume.
 4. Verify replication status: `hdfs dfsadmin -report` and NameNode UI (under-replicated blocks).","[Removed]
-- Repair step 1: ""Confirm failed-volume state and Data",1,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（幻觉）
+- Repair step 1: ""Confirm failed-volume state and Data",1,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（版本无据）
 274,hadoop,"YARN NodeManager logs report Container is running beyond virtual memory limits, and jobs repeatedly fail. How do I adjust?","Appropriately raise yarn.nodemanager.vmem-pmem-ratio, or increase the container physical memory (memory.mb) and the corresponding Xmx so physical memory matches the limit.","[Root cause] The container's virtual memory exceeded yarn.nodemanager.vmem-pmem-ratio × allocated memory; the NodeManager killed it. JVM processes (e.g., Spark/MapReduce) reserve large virtual address space, triggering this even when physical usage is low.
 
 [Version check] Run `hadoop version`. In Hadoop 2.x, `yarn.nodemanager.vmem-check-enabled` defaults to true with ratio 2.1; in 3.x the check defaults to false. Verify current values in yarn-site.xml or the ResourceManager web UI.
@@ -174,7 +174,7 @@ The container's virtual memory exceeds the yarn.nodemanager.vmem-pmem-ratio limi
 None mentioned in the retrieved evidence.
 
 [Repair steps]
-None supported by the retrieved evidence.",0,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（幻觉）
+None supported by the retrieved evidence.",0,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（版本无据）
 411,hive,A Hive job on Hadoop 3.3 reports ClassNotFound org.apache.hadoop.mapreduce.Mapper with the MR engine. How do I handle it?,"Confirm HADOOP_CLASSPATH is correct and Hive's hadoop dependency matches the cluster; add the mapreduce dependency, then rerun.","[Root cause]
 Hive's MR engine requires the full Hadoop mapreduce library; a missing Hadoop classpath entry or a Hive/Hadoop version mismatch prevents Mapper from loading.
 
@@ -192,7 +192,7 @@ Hive's MR engine cannot find the Hadoop mapreduce library class because the clas
 No version numbers appear in the evidence; none asserted.
 
 [Repair steps]
-(None supported by evidence.)",0,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（幻觉）
+(None supported by evidence.)",0,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（版本无据）
 414,hive,HiveServer2 reports Unable to open session under high concurrency; connections or session resources are exhausted. How do I handle it?,"Increase hive.server2.maximum.number.of.concurrent.sessions and the thread pool, add resources, and stagger connections.","[Root cause] HiveServer2's concurrent-session/thread pool and async execution resources are exhausted (session limit reached or host memory/CPU insufficient), so new sessions cannot open.
 
 [Version check] Run `hive --version`. Defaults differ by version: Hive 2.x sets `hive.server2.thrift.worker.threads=450`; older versions default lower. Verify live values with `SET hive.server2.thrift.worker.threads;` in beeline.
@@ -206,7 +206,7 @@ No version numbers appear in the evidence; none asserted.
 
 [Version check] None — the evidence mentions no version numbers.
 
-[Repair steps] None.",1,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（幻觉）
+[Repair steps] None.",1,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（版本无据）
 417,hive,"A Hive job has poor data locality at the map side and shuffles a lot to remote nodes, hurting performance. How do I optimize?","Check data replica distribution and scheduling-locality settings (mapred.task.cache.levels), and raise replicas or locality scheduling.","[Root cause] Map tasks run on nodes lacking block replicas, forcing cross-node reads and network-heavy shuffles—caused by uneven replica distribution and scheduler locality decisions.
 
 [Version check] Confirm Hadoop ≥2.x and Hive version via `hive --version`; ensure HDFS short-circuit reads are supported (`dfs.client.read.shortcircuit=true`).
@@ -221,7 +221,7 @@ No version numbers appear in the evidence; none asserted.
 
 [Version check] No version numbers appear in the evidence or the question.
 
-[Repair steps] None supported by evidence.",1,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（幻觉）
+[Repair steps] None supported by evidence.",1,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（版本无据）
 418,hive,"A Hive query reports Column not found, but the column exists; a case or alias issue. How do I handle it?","Check the column-name case and alias, use fully-qualified column names, avoid alias shadowing, then re-query.","[Root cause]
 Hive column names are case-sensitive, or the query references a wrong/undefined alias, so the column cannot be resolved.
 
@@ -240,7 +240,7 @@ Hive column names are case-sensitive, or the query references a wrong alias, so 
 No version numbers appear in the evidence; no compatibility claims are made.
 
 [Repair steps]
-(none — no repair steps are stated in the evidence)",1,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（幻觉）
+(none — no repair steps are stated in the evidence)",1,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（版本无据）
 421,hive,A Hive query reports File already exists in the output directory; the insert-overwrite fails. How do I handle it?,"Use INSERT OVERWRITE to overwrite, or clean the target directory first, confirm the output path is writable, then rewrite.","[Root cause] A file with the same name already exists in the output directory; Hive does not overwrite existing files by default, so the insert-overwrite fails.
 
 [Version check] Run `hive --version`; older releases (<1.0) handle overwrite of existing output files poorly. Confirm the overwrite behavior of `hive.insert.overwrite` and dynamic-partition settings in your version's documentation.
@@ -253,7 +253,7 @@ No version numbers appear in the evidence; no compatibility claims are made.
 
 [Version check] None mentioned in the evidence.
 
-[Repair steps] None supported by evidence.",0,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（幻觉）
+[Repair steps] None supported by evidence.",0,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（版本无据）
 424,hive,A Hive job reading an ORC table reports a schema mismatch; the column count differs. How do I handle it?,"Rebuild the table to align the ORC schema, or upgrade the table schema to be compatible with old files; verify columns and types before reading.","[Root cause] The ORC files' embedded schema doesn't match the metastore table definition — columns were added/changed in the data but the table DDL wasn't synced, so the reader sees a column-count mismatch.
 
 [Version check] Run `hive --version`. ORC schema evolution is supported from Hive 1.1+; `hive.exec.schema.evolution` requires Hive 2.1+. Ensure reader and writer Hive versions are compatible.
@@ -269,7 +269,7 @@ The read fails because the ORC file schema differs from the table definition (ad
 No version numbers appear in the retrieved evidence; no component-version pairs are claimed or assumed.
 
 [Repair steps]
-None supported by the retrieved evidence.",0,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（幻觉）
+None supported by the retrieved evidence.",0,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（版本无据）
 491,hbase,A single-row get in an HBase table is slow; I suspect missing column families or BloomFilter. How do I optimize?,"Enable a BloomFilter for the column family, optimize rowkey locality, reduce random block reads, and improve get performance.","[Root cause]
 The get is scanning excess blocks because the column family lacks a BloomFilter or is poorly designed, forcing HBase to check many store files.
 
@@ -287,4 +287,4 @@ Slow single-row reads are often caused by scanning too many blocks or a missing 
 None — no version numbers appear in the evidence.
 
 [Repair steps]
-None supported by the evidence.",1,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（幻觉）
+None supported by the evidence.",1,1,2=给出版本且与证据/标准答案一致；1=明确表示无版本信息（正确回避）；0=给出的版本与证据不符（版本无据）
