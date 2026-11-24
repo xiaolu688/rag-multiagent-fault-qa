@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Multi-agent troubleshooting pipeline with real LLM calls, three configurations.
+"""Multi-agent troubleshooting pipeline with real LLM calls, four evaluation configurations.
 
 Entry points used by the experiment drivers:
 
@@ -203,7 +203,7 @@ if __name__ == "__main__":
     import csv
     import sys
 
-    path = "bigdata_error_cases_500_en.csv"
+    path = "data/bigdata_error_cases_500_en.csv"
     rows = [r for r in csv.DictReader(open(path, encoding="utf-8-sig")) if r["split"] == "test"][:3]
     for r in rows:
         b = run_baseline_rag(r["question"], r["context"])
