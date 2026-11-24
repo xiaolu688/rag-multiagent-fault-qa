@@ -86,7 +86,7 @@ rag-multiagent-fault-qa/
 │   └── experiment_log.csv        run log (date, model, calls, notes)
 ├── figures/
 │   ├── fig1_system_architecture.png
-│   └── fig2_ablation.png
+│   └── fig2_ablation.png          paper Figure 2 (English labels; title cropped; Chinese paper localizes labels)
 └── docs/
     ├── results_summary_zh.md    Chinese summary of every number
     └── FS_ER_statistics_zh.md   Chinese statistics sheet for Table 6
