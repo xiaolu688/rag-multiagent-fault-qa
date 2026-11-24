@@ -5,7 +5,8 @@ The single-pass RAG answer is used as the candidate. Pure rules (regex plus a ve
 lookup) delete or replace version numbers that the evidence does not support. This
 baseline exists to test whether multi-agent verification is needed on top of rules.
 
-Judgement, identical to Table 2 of the paper:
+Three-level VC judgement, the same as Table II of the paper (this script evaluates
+the 15 evidence cases of Table VII, so its counts are not comparable to Table II):
   2 = at least one version is given and every version appears in the case evidence
       (context u gold)
   1 = no version is given (including an explicit disclaimer)
