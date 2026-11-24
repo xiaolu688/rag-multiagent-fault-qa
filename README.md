@@ -72,8 +72,8 @@ rag-multiagent-fault-qa/
 │   ├── metrics_with_bare.csv     metrics including the bare baseline
 │   ├── metrics_recomputed.csv    output of src/evaluate_metrics.py
 │   ├── metrics_halluc.csv        output of src/evaluate_hallucination.py
-│   ├── table3_real.csv           strict EM + Wilson CI per configuration (Table 3, EM column)
-│   ├── table4_paired.csv         paired significance tests (Table 4)
+│   ├── table3_real.csv           strict EM + Wilson CI per configuration (legacy artifact; not Table 3)
+│   ├── table4_paired.csv         paired significance tests (McNemar/Wilcoxon; Section V text)
 │   ├── latency_cost.csv          per-configuration latency / tokens / cost
 │   ├── token_ledger.csv          per-case token accounting
 │   ├── version_filter_eval.csv   deterministic-filter comparison (Table 7)
@@ -85,7 +85,7 @@ rag-multiagent-fault-qa/
 │   ├── vc_scoring_template_20.csv    same 20 cases, blank rows + the coding rules used
 │   └── experiment_log.csv        run log (date, model, calls, notes)
 ├── figures/
-│   ├── fig1_system_architecture.png
+│   ├── fig1_system_architecture.png   paper Figure 1 (English labels; Chinese paper localizes labels)
 │   └── fig2_ablation.png          paper Figure 2 (English labels; title cropped; Chinese paper localizes labels)
 └── docs/
     ├── results_summary_zh.md    Chinese summary of every number
@@ -209,7 +209,7 @@ python src/run_bare_baseline.py
 
 `run_real_experiment.py` writes per-case predictions to `results/case_comparison_100.csv`,
 token accounting to `results/token_ledger.csv`, latency/cost to `results/latency_cost.csv`,
-and the ablation table to `results/table3_real.csv`. Progress is appended to
+and the ablation metrics to `results/metrics_real.csv`; `results/table3_real.csv` is the legacy strict-EM/Wilson-CI artifact. Progress is appended to
 `results/real_run_progress.jsonl` (git-ignored, created on the first run), so an interrupted
 run resumes where it stopped.
 
@@ -236,7 +236,7 @@ python src/evaluate_hallucination.py  # Appendix C.5 rule, standalone
 `src/evaluate_metrics.py` prints and writes `results/metrics_recomputed.csv`, plus
 `results/table4_paired.csv` (McNemar on version hallucination, Wilcoxon on per-case F1).
 Word F1, ROUGE-L, refusal and length live in `results/metrics_real.csv`; `results/table3_real.csv`
-holds the strict-EM / Wilson-CI column of the ablation table, and `results/version_filter_summary.json`
+holds a legacy strict-EM / Wilson-CI artifact (not the ablation table), and `results/version_filter_summary.json`
 holds the version-recall counts used in Table 2.
 Metric definitions are documented in the docstring and in the paper (Appendix C.5, §4.3):
 tokens are `re.findall(r"[a-z0-9]+", lower(text))`; word F1 uses token **sets**; ROUGE-L is
