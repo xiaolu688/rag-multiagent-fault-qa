@@ -2,6 +2,8 @@
 """Ablation figure (Figure 2): word-level F1 (bars) + version-hallucination rate (line), Table 3 data.
 
 Run from the repository root:  python src/plot_ablation.py  ->  figures/fig2_ablation.png
+
+The paper version omits the in-figure title; the Chinese paper localizes the axis labels.
 """
 import matplotlib
 matplotlib.use("Agg")
@@ -22,7 +24,7 @@ halluc  = np.array([0.35,   0.11,   0.03,   0.00])     # version-hallucination r
 
 x = np.arange(len(configs))
 
-fig, ax = plt.subplots(figsize=(7.2, 4.8), dpi=300)
+fig, ax = plt.subplots(figsize=(7.2, 4.466), dpi=300)
 
 # ---- left axis: F1 bars
 bars = ax.bar(x, f1, width=0.58, color="#4472C4", edgecolor="none",
@@ -59,7 +61,6 @@ ax.set_xticks(x)
 ax.set_xticklabels(configs, fontsize=10.5)
 ax.tick_params(axis="y", labelsize=9.5)
 ax2.tick_params(axis="y", labelsize=9.5)
-ax.set_title("Ablation study: hallucination cleared, coverage lower overall", fontsize=12.5, pad=12)
 ax.legend([bars, line], ["Word-level F1", "Version-hallucination rate"], loc="upper right",
           fontsize=9.5, frameon=False)
 
