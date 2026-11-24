@@ -161,12 +161,12 @@ reproduced without any API key** (steps 8–9 below).
 | item | value |
 |---|---|
 | name | `bigdata_error_cases_500_en` |
-| location | `data/bigdata_error_cases_500_en.csv` (296 KB, committed) |
+| location | `data/bigdata_error_cases_500_en.csv` (296 KiB by `du`; 300,910 bytes, committed) |
 | size | 500 cases, 4 components × 125 (Hadoop, Spark, Hive, HBase) |
 | fields | `id, component, question, context, ground_truth, source, split, status` |
 | evidence | `context` — the documentation span that governs the case (≈190 characters) |
-| gold | `ground_truth` — a 3–5 step repair procedure |
-| sources | Supporting-page URLs: mostly Apache official documentation and project wikis, plus vendor documentation (Cloudera, Huawei Cloud, Alibaba Cloud, Microsoft Learn) and technical community posts (Stack Overflow, CSDN, Cnblogs); each row carries its `source` URL |
+| gold | `ground_truth` — an author-written repair explanation; mostly multi-sentence free text, with some entries containing 3–5 numbered steps |
+| sources | Supporting-page URLs: Apache official documentation and project wikis (345), Apache mailing-list archives/project pages (10), plus vendor documentation (Cloudera, Huawei Cloud, Alibaba Cloud, Microsoft Learn) and technical community posts (Stack Overflow, CSDN, Cnblogs); each row carries its `source` URL |
 | split | frozen: `kb` = 400, `test` = 100, stratified 8:2 per component, seed 42 |
 | leakage | verified zero: no test question and no test evidence span appears in `kb` |
 
@@ -280,8 +280,9 @@ and the suggestion coincide and only one filled sheet is shipped. Because this i
 with AI pre-annotation, the paper reports it as a consistency check and states the limited
 power (FS b=0/c=5, p=0.0625; ER b=13/c=1, p=0.0018) rather than as a blind human study.
 
-Strict EM is 0 for every configuration because gold answers are multi-step numbered
-procedures; the paper reports this as a finding about the metric, not as a system failure.
+Strict EM is 0 for every configuration because gold answers are long free-text
+repair explanations (many use numbered steps, but not all); the paper reports this as a
+finding about the metric, not as a system failure.
 
 Data-caveat notes: `token_ledger.csv` carries a `config` column because its 100 rows are the
 sum of the four ablation configurations; `metrics_with_bare.csv` takes the latency and token
@@ -363,5 +364,5 @@ figure from the committed predictions in a few seconds.
 * The 20-case FS/ER sheet is single-annotator; the AI pre-annotation was adopted 100%, so it
   is a consistency check, not an independent blind evaluation (FS p=0.0625, underpowered).
 * The poisoning experiment covers 27 cases and one tampering family per case.
-* Strict EM is degenerate on this dataset (multi-step gold answers); word F1 and ROUGE-L are
+* Strict EM is degenerate on this dataset (long free-text gold answers); word F1 and ROUGE-L are
   the reported surface metrics.
