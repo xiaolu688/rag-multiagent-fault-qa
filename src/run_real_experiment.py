@@ -10,7 +10,7 @@ Outputs
     results/case_comparison_100.csv  per-case predictions of the 4 configurations
     results/latency_cost.csv         latency, tokens and cost per configuration
     results/token_ledger.csv         per-case token accounting
-    results/table3_real.csv          ablation table (strict EM + Wilson CI)
+    results/table3_real.csv          legacy strict-EM / Wilson-CI table
 """
 import argparse
 import csv
@@ -154,13 +154,13 @@ def main():
         for r in rows:
             fw.writerow({k: r[k] for k in cols})
 
-    with open("results/token_ledger.csv", "w", encoding="utf-8", newline="") as f:
+    with open("results/token_ledger.csv", "w", encoding="utf-8-sig", newline="") as f:
         fw = csv.writer(f)
-        fw.writerow(["case_id", "prompt_tokens", "completion_tokens", "cost_usd"])
+        fw.writerow(["config", "case_id", "prompt_tokens", "completion_tokens", "cost_usd"])
         for r in rows:
             tin = sum(int(r[f"{c}_in"]) for c in CONFIGS)
             tout = sum(int(r[f"{c}_out"]) for c in CONFIGS)
-            fw.writerow([r["case_id"], tin, tout, r["cost_usd"]])
+            fw.writerow(["sum_of_4_configs", r["case_id"], tin, tout, r["cost_usd"]])
 
     em, lat_rows, table = {}, [], []
     for cfg in CONFIGS:
