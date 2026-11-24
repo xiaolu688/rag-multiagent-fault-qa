@@ -3,9 +3,8 @@
 Reproducibility package for the final paper *"基于 RAG 与多智能体协同的大数据实验室故障排查问答系统研究"*
 — English title: *Research on Big-Data-Laboratory Troubleshooting Question-Answering System
 Based on RAG and Multi-Agent Collaboration* (Yajie Gao, Wenzhou-Kean University, CPS 5801).
-This exact string is used as the H1, the bibtex `title`, the repository description and the
-manuscript title; the earlier working subtitle "Verifying Version-Compatibility Claims" is
-dropped.
+It contains the complete code, dataset, configuration files and frozen outputs needed to
+reproduce the reported results.
 
 The system answers troubleshooting questions about a Hadoop / Spark / Hive / HBase teaching
 cluster. Its distinguishing problem is **version compatibility**: the same error text has a
@@ -216,7 +215,8 @@ run resumes where it stopped.
 Evidence-poisoning experiment (Table 8), 27 cases × 2 conditions:
 
 ```bash
-python src/run_injection.py
+RAG_CONFIG=configs/injection.yaml python src/run_injection.py
+# or: bash scripts/run_injection.sh
 ```
 
 Deterministic version-filter baseline (Table 7), **zero model calls**, reads the committed
@@ -311,9 +311,12 @@ column; `cost_usd` is 0 everywhere because platform credit covered the calls.
 }
 ```
 
-Code attribution:
-* `src/pipeline.py`, `run_*.py`, `filter_baseline.py`, `evaluate_*.py`, `preprocessing.py`,
-  `make_figure1.py`, `plot_ablation.py` — written by the author for this project.
+Code provenance (the complete AI-assistance table is in [`AI_DISCLOSURE.md`](AI_DISCLOSURE.md)):
+* `src/pipeline.py`, `run_*.py`, `filter_baseline.py`, `preprocessing.py` — author-led design;
+  the author ran every script and fixed all failures; drafting/refactoring was AI-assisted.
+* `src/evaluate_*.py`, `make_figure1.py`, `plot_ablation.py` — first drafted by the AI assistant;
+  the author re-derived every metric from the committed predictions and checked every figure.
+* `README.md` and code docstrings — AI-assisted drafting; the author reviewed the content.
 * Libraries used as-is: `openai` (API client), `numpy`, `matplotlib`, `scipy`, `PyYAML`.
   No third-party source code was copied into this repository.
 * The three agent prompts are the author's own; they are inspired by, but not copied from,

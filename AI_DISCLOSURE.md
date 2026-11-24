@@ -19,10 +19,11 @@ CPS 5801 final project — "Research on Big-Data-Laboratory Troubleshooting Ques
   [1 single-pass RAG call + 3 pipeline calls]) were launched
   by the author on the author's machine; the timings and token counts in `results/` are
   measured, not estimated. The per-run breakdown is in `results/experiment_log.csv`.
-* It did **not** fill in the human evaluation sheets. The AI drafted a suggested score for
-  each of the 120 judgements (20 cases × 3 dimensions × baseline/pipeline: VC 40, FS 40, ER 40); the author read every prediction
-  against the evidence and adopted all of the suggestions (agreement 100%), so the shipped
-  sheets (`results/fs_er_human_scores_20.csv`, `results/vc_manual_scores_20.csv`) coincide
+* It did **not** independently produce the final human ratings. The AI drafted a suggested
+  score for each of the 120 judgements (20 cases × 3 dimensions × baseline/pipeline: VC 40,
+  FS 40, ER 40); the author read every prediction against the evidence and adopted all of
+  the suggestions (agreement 100%). The shipped sheets
+  (`results/fs_er_human_scores_20.csv`, `results/vc_manual_scores_20.csv`) therefore coincide
   with the draft and only one version is committed. The coding rules are printed in
   `results/vc_scoring_template_20.csv`. Because the sheets come from a single annotator with AI
   pre-annotation, the paper describes them as a consistency check, **not** as an independent
